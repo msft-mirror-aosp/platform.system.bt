@@ -21,7 +21,8 @@
 #include "avrc_defs.h"
 #include "avrc_int.h"
 #include "bt_common.h"
-#include "log/log.h"
+
+#include "osi/include/log.h"
 
 /*****************************************************************************
  *  Global data
@@ -75,6 +76,12 @@ static tAVRC_STS avrc_ctrl_pars_vendor_cmd(tAVRC_MSG_VENDOR* p_msg,
 
       BE_STREAM_TO_UINT8(p_result->reg_notif.event_id, p);
       BE_STREAM_TO_UINT32(p_result->reg_notif.param, p);
+
+      if (p_result->reg_notif.event_id == 0 ||
+          p_result->reg_notif.event_id > AVRC_NUM_NOTIF_EVENTS) {
+        android_errorWriteLog(0x534e4554, "181860042");
+        status = AVRC_STS_BAD_PARAM;
+      }
       break;
     default:
       status = AVRC_STS_BAD_CMD;
@@ -111,6 +118,13 @@ static tAVRC_STS avrc_pars_vendor_cmd(tAVRC_MSG_VENDOR* p_msg,
   /* Check the vendor data */
   if (p_msg->vendor_len == 0) return AVRC_STS_NO_ERROR;
   if (p_msg->p_vendor_data == NULL) return AVRC_STS_INTERNAL_ERR;
+
+  if (p_msg->vendor_len < 4) {
+    android_errorWriteLog(0x534e4554, "168712382");
+    AVRC_TRACE_WARNING("%s: message length %d too short: must be at least 4",
+                       __func__, p_msg->vendor_len);
+    return AVRC_STS_INTERNAL_ERR;
+  }
 
   p = p_msg->p_vendor_data;
   p_result->pdu = *p++;
