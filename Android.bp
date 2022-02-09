@@ -66,3 +66,15 @@ filegroup {
         "AndroidTestTemplate.xml",
     ],
 }
+
+filegroup {
+    name: "framework-bluetooth-srcs",
+    srcs: [],
+    visibility: ["//visibility:private"]
+}
+
+java_library {
+    name: "framework-bluetooth",
+    srcs: [":framework-bluetooth-srcs"],
+    sdk_version: "module_current"
+}
