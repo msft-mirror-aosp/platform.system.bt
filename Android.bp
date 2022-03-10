@@ -78,3 +78,9 @@ java_library {
     srcs: [":framework-bluetooth-srcs"],
     sdk_version: "module_current"
 }
+
+java_library {
+    name: "framework-bluetooth.stubs.module_lib",
+    srcs: [":framework-bluetooth-srcs"],
+    sdk_version: "module_current"
+}
