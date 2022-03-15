@@ -35,3 +35,12 @@ android_app_certificate {
     name: "com.android.bluetooth.updatable.certificate",
     certificate: "com.android.bluetooth.updatable",
 }
+
+// Empty, disabled APEX to allow other libraries to specify "apex_available"
+// in all branches without merge conflicts.
+apex {
+    name: "com.android.bluetooth",
+    enabled: false,
+    key: "com.android.bluetooth.updatable.key",
+    certificate: ":com.android.bluetooth.updatable.certificate",
+}
