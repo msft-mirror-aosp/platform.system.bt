@@ -22,46 +22,37 @@ static_library("device") {
   ]
 
   include_dirs = [
-    "//bt/",
-    "//bt/btcore/include",
-    "//bt/hci/include",
-    "//bt/internal_include",
-    "//bt/stack/include",
-  ]
-
-  configs += [
-    "//bt:target_defaults",
+    "//",
+    "//btcore/include",
+    "//hci/include",
+    "//internal_include",
+    "//stack/include",
   ]
 
   deps = [
-    "//bt/gd/rust/shim:init_flags_bridge_header",
-    "//bt/gd/rust/shim:message_loop_thread_bridge_header",
+    "//third_party/libchrome:base",
   ]
 }
 
-if (use.test) {
-  executable("net_test_device") {
-    sources = [
-      "//bt/osi/test/AllocationTestHarness.cc",
-    ]
+executable("net_test_device") {
+  testonly = true
+  sources = [
+    "//osi/test/AllocationTestHarness.cc",
+  ]
 
-    include_dirs = [ "//bt" ]
+  include_dirs = [ "//" ]
 
-    deps = [
-      "//bt/device",
-      "//bt/btcore",
-      "//bt/osi",
-    ]
+  deps = [
+    "//device",
+    "//btcore",
+    "//osi",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libchrome:base",
+  ]
 
-    configs += [
-      "//bt:external_gtest_main",
-      "//bt:target_defaults",
-    ]
-
-    libs = [
-      "pthread",
-      "rt",
-      "dl",
-    ]
-  }
+  libs = [
+    "-lpthread",
+    "-lrt",
+    "-ldl",
+  ]
 }

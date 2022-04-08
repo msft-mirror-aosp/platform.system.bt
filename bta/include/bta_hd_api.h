@@ -19,11 +19,8 @@
 #ifndef BTA_HD_API_H
 #define BTA_HD_API_H
 
-#include <cstdint>
-
-#include "bta/include/bta_api.h"
-#include "stack/include/hiddefs.h"
-#include "types/raw_address.h"
+#include "bta_api.h"
+#include "hidd_api.h"
 
 /*****************************************************************************
  *  Constants and Type Definitions

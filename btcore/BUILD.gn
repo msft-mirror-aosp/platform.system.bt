@@ -19,51 +19,44 @@ static_library("btcore") {
     "src/device_class.cc",
     "src/hal_util.cc",
     "src/module.cc",
-    "src/osi_module.cc",
     "src/property.cc",
+    "src/osi_module.cc",
   ]
 
   include_dirs = [
     "include",
-    "//bt",
+    "//",
   ]
 
-  configs += [ "//bt:target_defaults" ]
-
   deps = [
-    "//bt/gd/rust/shim:init_flags_bridge_header",
-    "//bt/gd/rust/shim:message_loop_thread_bridge_header",
+    "//third_party/libchrome:base",
   ]
 }
 
-if (use.test) {
-  executable("net_test_btcore") {
-    sources = [
-      "//bt/osi/test/AllocationTestHarness.cc",
-      "test/device_class_test.cc",
-      "test/property_test.cc",
-    ]
+executable("net_test_btcore") {
+  testonly = true
+  sources = [
+    "test/device_class_test.cc",
+    "test/property_test.cc",
+    "//osi/test/AllocationTestHarness.cc",
+  ]
 
-    include_dirs = [
-      "include",
-      "//bt",
-    ]
+  include_dirs = [
+    "include",
+    "//",
+  ]
 
-    deps = [
-      "//bt/btcore",
-      "//bt/osi",
-      "//bt/types",
-    ]
+  deps = [
+    "//btcore",
+    "//osi",
+    "//types",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libchrome:base",
+  ]
 
-    configs += [
-      "//bt:external_gtest_main",
-      "//bt:target_defaults",
-    ]
-
-    libs = [
-      "pthread",
-      "rt",
-      "dl",
-    ]
-  }
+  libs = [
+    "-lpthread",
+    "-lrt",
+    "-ldl",
+  ]
 }

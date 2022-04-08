@@ -22,13 +22,10 @@ source_set("udrv") {
   include_dirs = [
     "include",
     "uipc",
-    "//bt/",
-    "//bt/internal_include",
-    "//bt/stack/include",
-    "//bt/utils/include",
-  ]
-
-  configs += [
-    "//bt:target_defaults"
+    "//",
+    "//internal_include",
+    "//stack/include",
+    "//utils/include",
+    "//third_party/libchrome",
   ]
 }

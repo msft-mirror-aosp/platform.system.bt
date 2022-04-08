@@ -85,12 +85,9 @@ bool ConnectionHandler::CleanUp() {
   CHECK(instance_ != nullptr);
 
   // TODO (apanicke): Cleanup the SDP Entries here
-  for (auto entry = instance_->device_map_.begin();
-       entry != instance_->device_map_.end();) {
-    auto curr = entry;
-    entry++;
-    curr->second->DeviceDisconnected();
-    instance_->avrc_->Close(curr->first);
+  for (const auto& entry : instance_->device_map_) {
+    entry.second->DeviceDisconnected();
+    instance_->avrc_->Close(entry.first);
   }
   instance_->device_map_.clear();
   instance_->feature_map_.clear();
@@ -149,16 +146,6 @@ bool ConnectionHandler::DisconnectDevice(const RawAddress& bdaddr) {
   return false;
 }
 
-void ConnectionHandler::SetBipClientStatus(const RawAddress& bdaddr,
-                                           bool connected) {
-  for (auto it = device_map_.begin(); it != device_map_.end(); it++) {
-    if (bdaddr == it->second->GetAddress()) {
-      it->second->SetBipClientStatus(connected);
-      return;
-    }
-  }
-}
-
 std::vector<std::shared_ptr<Device>> ConnectionHandler::GetListOfDevices()
     const {
   std::vector<std::shared_ptr<Device>> list;
@@ -211,8 +198,7 @@ bool ConnectionHandler::AvrcpConnect(bool initiator, const RawAddress& bdaddr) {
                            : AVRC_CONN_ACP;  // 0 if initiator, 1 if acceptor
   // TODO (apanicke): We shouldn't need RCCT to do absolute volume. The current
   // AVRC_API requires it though.
-  open_cb.control = BTA_AV_FEAT_RCTG | BTA_AV_FEAT_RCCT | BTA_AV_FEAT_METADATA
-                    | AVRC_CT_PASSIVE;
+  open_cb.control = BTA_AV_FEAT_RCTG | BTA_AV_FEAT_RCCT | BTA_AV_FEAT_METADATA;
 
   uint8_t handle = 0;
   uint16_t status = avrc_->Open(&handle, &open_cb, bdaddr);
@@ -423,7 +409,7 @@ void ConnectionHandler::MessageCb(uint8_t handle, uint8_t label, uint8_t opcode,
 void ConnectionHandler::SdpCb(RawAddress bdaddr, SdpCallback cb,
                               tSDP_DISCOVERY_DB* disc_db, bool retry,
                               uint16_t status) {
-  VLOG(1) << __PRETTY_FUNCTION__ << ": SDP lookup callback received";
+  LOG(INFO) << __PRETTY_FUNCTION__ << ": SDP lookup callback received";
 
   if (status == SDP_CONN_FAILED and !retry) {
     LOG(WARNING) << __PRETTY_FUNCTION__ << ": SDP Failure retry again";
@@ -455,35 +441,35 @@ void ConnectionHandler::SdpCb(RawAddress bdaddr, SdpCallback cb,
       /* get profile version (if failure, version parameter is not updated) */
       sdp_->FindProfileVersionInRec(
           sdp_record, UUID_SERVCLASS_AV_REMOTE_CONTROL, &peer_avrcp_version);
-      VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-              << " peer avrcp version=" << loghex(peer_avrcp_version);
+      LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+                << " peer avrcp version=" << loghex(peer_avrcp_version);
 
       if (peer_avrcp_version >= AVRC_REV_1_3) {
         // These are the standard features, another way to check this is to
         // search for CAT1 on the remote device
-        VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-                << " supports metadata";
+        LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+                  << " supports metadata";
         peer_features |= (BTA_AV_FEAT_VENDOR | BTA_AV_FEAT_METADATA);
       }
       if (peer_avrcp_version >= AVRC_REV_1_4) {
         /* get supported categories */
-        VLOG(1) << __PRETTY_FUNCTION__ << " Get Supported categories";
+        LOG(INFO) << __PRETTY_FUNCTION__ << " Get Supported categories";
         tSDP_DISC_ATTR* sdp_attribute =
             sdp_->FindAttributeInRec(sdp_record, ATTR_ID_SUPPORTED_FEATURES);
         if (sdp_attribute != NULL) {
-          VLOG(1) << __PRETTY_FUNCTION__
-                  << "Get Supported categories SDP ATTRIBUTES != null";
+          LOG(INFO) << __PRETTY_FUNCTION__
+                    << "Get Supported categories SDP ATTRIBUTES != null";
           uint16_t categories = sdp_attribute->attr_value.v.u16;
           if (categories & AVRC_SUPF_CT_CAT2) {
-            VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-                    << " supports advanced control";
+            LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+                      << " supports advanced control";
             if (IsAbsoluteVolumeEnabled(&bdaddr)) {
               peer_features |= (BTA_AV_FEAT_ADV_CTRL);
             }
           }
           if (categories & AVRC_SUPF_CT_BROWSE) {
-            VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-                    << " supports browsing";
+            LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+                      << " supports browsing";
             peer_features |= (BTA_AV_FEAT_BROWSE);
           }
         }
@@ -494,30 +480,30 @@ void ConnectionHandler::SdpCb(RawAddress bdaddr, SdpCallback cb,
   sdp_record = sdp_->FindServiceInDb(disc_db, UUID_SERVCLASS_AV_REM_CTRL_TARGET,
                                      nullptr);
   if (sdp_record != nullptr) {
-    VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-            << " supports remote control target";
+    LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+              << " supports remote control target";
 
     uint16_t peer_avrcp_target_version = 0;
     sdp_->FindProfileVersionInRec(sdp_record, UUID_SERVCLASS_AV_REMOTE_CONTROL,
                                   &peer_avrcp_target_version);
-    VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-            << " peer avrcp target version="
-            << loghex(peer_avrcp_target_version);
+    LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+              << " peer avrcp target version="
+              << loghex(peer_avrcp_target_version);
 
     if ((sdp_->FindAttributeInRec(sdp_record, ATTR_ID_BT_PROFILE_DESC_LIST)) !=
         NULL) {
       if (peer_avrcp_target_version >= AVRC_REV_1_4) {
         /* get supported categories */
-        VLOG(1) << __PRETTY_FUNCTION__ << " Get Supported categories";
+        LOG(INFO) << __PRETTY_FUNCTION__ << " Get Supported categories";
         tSDP_DISC_ATTR* sdp_attribute =
             sdp_->FindAttributeInRec(sdp_record, ATTR_ID_SUPPORTED_FEATURES);
         if (sdp_attribute != NULL) {
-          VLOG(1) << __PRETTY_FUNCTION__
-                  << "Get Supported categories SDP ATTRIBUTES != null";
+          LOG(INFO) << __PRETTY_FUNCTION__
+                    << "Get Supported categories SDP ATTRIBUTES != null";
           uint16_t categories = sdp_attribute->attr_value.v.u16;
           if (categories & AVRC_SUPF_CT_CAT2) {
-            VLOG(1) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
-                    << " supports advanced control";
+            LOG(INFO) << __PRETTY_FUNCTION__ << ": Device " << bdaddr.ToString()
+                      << " supports advanced control";
             if (IsAbsoluteVolumeEnabled(&bdaddr)) {
               peer_features |= (BTA_AV_FEAT_ADV_CTRL);
             }

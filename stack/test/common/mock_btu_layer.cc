@@ -16,6 +16,6 @@
  *
  ******************************************************************************/
 
-#include "common/message_loop_thread.h"
+#include <base/message_loop/message_loop.h>
 
-bluetooth::common::MessageLoopThread* get_main_thread() { return nullptr; }
+base::MessageLoop* get_main_message_loop() { return nullptr; }

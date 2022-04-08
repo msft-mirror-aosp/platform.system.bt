@@ -26,7 +26,6 @@
 #include "base/memory/ptr_util.h"
 #include "service/logging_helpers.h"
 
-#include "array_utils.h"
 #include "stack/include/avrc_defs.h"
 
 #define PARSE_ADDR(str)                                        \
@@ -158,7 +157,7 @@ bool AvrcpTarget::GetPlayerAppValueResponse(
     const std::string& str_addr, const std::vector<AvrcpIntValue>& values) {
   RawAddress addr = PARSE_ADDR(str_addr);
   btrc_player_settings_t btrc_values;
-  if (values.size() >= ARRAY_SIZE(btrc_values.attr_ids)) {
+  if (values.size() >= arraysize(btrc_values.attr_ids)) {
     LOG(ERROR) << "Too many attribute values";
     return false;
   }

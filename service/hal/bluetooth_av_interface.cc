@@ -22,7 +22,6 @@
 #include <base/memory/ptr_util.h>
 #include <base/observer_list.h>
 
-#include "abstract_observer_list.h"
 #include "service/hal/bluetooth_interface.h"
 
 namespace bluetooth {
@@ -42,9 +41,9 @@ using shared_mutex_impl = std::shared_timed_mutex;
 // use unique_lock. If only accessing |g_interface| use shared lock.
 shared_mutex_impl g_instance_lock;
 
-btbase::AbstractObserverList<BluetoothAvInterface::A2dpSourceObserver>*
+base::ObserverList<BluetoothAvInterface::A2dpSourceObserver>*
 GetA2dpSourceObservers();
-btbase::AbstractObserverList<BluetoothAvInterface::A2dpSinkObserver>*
+base::ObserverList<BluetoothAvInterface::A2dpSinkObserver>*
 GetA2dpSinkObservers();
 
 #define VERIFY_INTERFACE_OR_RETURN(...)                                \
@@ -184,12 +183,7 @@ class BluetoothAvInterfaceImpl : public BluetoothAvInterface {
     if (sink_enabled_) {
       return true;
     }
-
-    // Right now we only support one connected audio device.
-    int max_connected_audio_devices = 1;
-    if (hal_sink_iface_->init(&av_sink_callbacks,
-                              max_connected_audio_devices) !=
-        BT_STATUS_SUCCESS) {
+    if (hal_sink_iface_->init(&av_sink_callbacks) != BT_STATUS_SUCCESS) {
       LOG(ERROR) << "Failed to initialize HAL A2DP sink interface";
       return false;
     }
@@ -256,17 +250,17 @@ class BluetoothAvInterfaceImpl : public BluetoothAvInterface {
     return A2dpSinkEnable();
   }
 
-  btbase::AbstractObserverList<A2dpSourceObserver>* source_observers() {
+  base::ObserverList<A2dpSourceObserver>* source_observers() {
     return &a2dp_source_observers_;
   }
 
-  btbase::AbstractObserverList<A2dpSinkObserver>* sink_observers() {
+  base::ObserverList<A2dpSinkObserver>* sink_observers() {
     return &a2dp_sink_observers_;
   }
 
  private:
-  btbase::AbstractObserverList<A2dpSourceObserver> a2dp_source_observers_;
-  btbase::AbstractObserverList<A2dpSinkObserver> a2dp_sink_observers_;
+  base::ObserverList<A2dpSourceObserver> a2dp_source_observers_;
+  base::ObserverList<A2dpSinkObserver> a2dp_sink_observers_;
 
   const btav_source_interface_t* hal_source_iface_ = nullptr;
   const btav_sink_interface_t* hal_sink_iface_ = nullptr;
@@ -279,14 +273,14 @@ class BluetoothAvInterfaceImpl : public BluetoothAvInterface {
 
 namespace {
 
-btbase::AbstractObserverList<BluetoothAvInterface::A2dpSourceObserver>*
+base::ObserverList<BluetoothAvInterface::A2dpSourceObserver>*
 GetA2dpSourceObservers() {
   CHECK(g_interface);
   return static_cast<BluetoothAvInterfaceImpl*>(g_interface)
       ->source_observers();
 }
 
-btbase::AbstractObserverList<BluetoothAvInterface::A2dpSinkObserver>*
+base::ObserverList<BluetoothAvInterface::A2dpSinkObserver>*
 GetA2dpSinkObservers() {
   CHECK(g_interface);
   return static_cast<BluetoothAvInterfaceImpl*>(g_interface)->sink_observers();

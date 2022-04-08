@@ -22,8 +22,6 @@
  *
  ******************************************************************************/
 
-#include <algorithm>
-
 #include "crypto_toolbox/aes.h"
 #include "crypto_toolbox/crypto_toolbox.h"
 

@@ -15,7 +15,8 @@
  */
 #include "device.h"
 
-#include "abstract_message_loop.h"
+#include <base/message_loop/message_loop.h>
+
 #include "connection_handler.h"
 #include "packet/avrcp/avrcp_reject_packet.h"
 #include "packet/avrcp/general_reject_packet.h"
@@ -45,8 +46,7 @@ Device::Device(
       avrcp13_compatibility_(avrcp13_compatibility),
       send_message_cb_(send_msg_cb),
       ctrl_mtu_(ctrl_mtu),
-      browse_mtu_(browse_mtu),
-      has_bip_client_(false) {}
+      browse_mtu_(browse_mtu) {}
 
 void Device::RegisterInterfaces(MediaInterface* media_interface,
                                 A2dpInterface* a2dp_interface,
@@ -65,24 +65,6 @@ base::WeakPtr<Device> Device::Get() {
 void Device::SetBrowseMtu(uint16_t browse_mtu) {
   DEVICE_LOG(INFO) << __PRETTY_FUNCTION__ << ": browse_mtu = " << browse_mtu;
   browse_mtu_ = browse_mtu;
-}
-
-void Device::SetBipClientStatus(bool connected) {
-  DEVICE_LOG(INFO) << __PRETTY_FUNCTION__ << ": connected = " << connected;
-  has_bip_client_ = connected;
-}
-
-bool Device::HasBipClient() const {
-  return has_bip_client_;
-}
-
-void filter_cover_art(SongInfo& s) {
-  for (auto it = s.attributes.begin(); it != s.attributes.end(); it++) {
-    if (it->attribute() == Attribute::DEFAULT_COVER_ART) {
-      s.attributes.erase(it);
-      break;
-    }
-  }
 }
 
 bool Device::IsActive() const {
@@ -169,7 +151,6 @@ void Device::VendorPacketHandler(uint8_t label,
         DEVICE_LOG(WARNING) << __func__ << ": Request packet is not valid";
         auto response = RejectBuilder::MakeBuilder(pkt->GetCommandPdu(), Status::INVALID_PARAMETER);
         send_message(label, false, std::move(response));
-        return;
       }
       media_interface_->GetSongInfo(base::Bind(&Device::GetElementAttributesResponse, weak_ptr_factory_.GetWeakPtr(),
                                                label, get_element_attributes_request_pkt));
@@ -539,7 +520,7 @@ void Device::PlaybackPosNotificationResponse(uint8_t label, bool interim,
     DEVICE_VLOG(0) << __func__ << ": Queue next play position update";
     play_pos_update_cb_.Reset(base::Bind(&Device::HandlePlayPosUpdate,
                                          weak_ptr_factory_.GetWeakPtr()));
-    btbase::AbstractMessageLoop::current_task_runner()->PostDelayedTask(
+    base::MessageLoop::current()->task_runner()->PostDelayedTask(
         FROM_HERE, play_pos_update_cb_.callback(),
         base::TimeDelta::FromSeconds(play_pos_interval_));
   }
@@ -606,16 +587,13 @@ void Device::GetPlayStatusResponse(uint8_t label, PlayStatus status) {
 void Device::GetElementAttributesResponse(
     uint8_t label, std::shared_ptr<GetElementAttributesRequest> pkt,
     SongInfo info) {
+  DEVICE_VLOG(2) << __func__;
+
   auto get_element_attributes_pkt = pkt;
   auto attributes_requested =
       get_element_attributes_pkt->GetAttributesRequested();
 
   auto response = GetElementAttributesResponseBuilder::MakeBuilder(ctrl_mtu_);
-
-  // Filter out DEFAULT_COVER_ART handle if this device has no client
-  if (!HasBipClient()) {
-    filter_cover_art(info);
-  }
 
   last_song_info_ = info;
 
@@ -1030,11 +1008,6 @@ void Device::GetItemAttributesNowPlayingResponse(
     }
   }
 
-  // Filter out DEFAULT_COVER_ART handle if this device has no client
-  if (!HasBipClient()) {
-    filter_cover_art(info);
-  }
-
   auto attributes_requested = pkt->GetAttributesRequested();
   if (attributes_requested.size() != 0) {
     for (const auto& attribute : attributes_requested) {
@@ -1076,11 +1049,6 @@ void Device::GetItemAttributesVFSResponse(
         (temp.type == ListItem::SONG && temp.song.media_id == media_id)) {
       item_requested = temp;
     }
-  }
-
-  // Filter out DEFAULT_COVER_ART handle if this device has no client
-  if (item_requested.type == ListItem::SONG && !HasBipClient()) {
-    filter_cover_art(item_requested.song);
   }
 
   // TODO (apanicke): Add a helper function or allow adding a map
@@ -1202,12 +1170,6 @@ void Device::GetVFSListResponse(uint8_t label,
       if (!builder->AddFolder(folder_item)) break;
     } else if (items[i].type == ListItem::SONG) {
       auto song = items[i].song;
-
-      // Filter out DEFAULT_COVER_ART handle if this device has no client
-      if (!HasBipClient()) {
-        filter_cover_art(song);
-      }
-
       auto title =
           song.attributes.find(Attribute::TITLE) != song.attributes.end()
               ? song.attributes.find(Attribute::TITLE)->value()
@@ -1246,12 +1208,6 @@ void Device::GetNowPlayingListResponse(
   for (size_t i = pkt->GetStartItem();
        i <= pkt->GetEndItem() && i < song_list.size(); i++) {
     auto song = song_list[i];
-
-    // Filter out DEFAULT_COVER_ART handle if this device has no client
-    if (!HasBipClient()) {
-      filter_cover_art(song);
-    }
-
     auto title = song.attributes.find(Attribute::TITLE) != song.attributes.end()
                      ? song.attributes.find(Attribute::TITLE)->value()
                      : "No Song Info";
@@ -1297,14 +1253,6 @@ void Device::SetBrowsedPlayerResponse(
   if (!success) {
     auto response = SetBrowsedPlayerResponseBuilder::MakeBuilder(
         Status::INVALID_PLAYER_ID, 0x0000, num_items, 0, "");
-    send_message(label, true, std::move(response));
-    return;
-  }
-
-  if (pkt->GetPlayerId() == 0 && num_items == 0) {
-    // Response fail if no browsable player in Bluetooth Player
-    auto response = SetBrowsedPlayerResponseBuilder::MakeBuilder(
-        Status::PLAYER_NOT_BROWSABLE, 0x0000, num_items, 0, "");
     send_message(label, true, std::move(response));
     return;
   }

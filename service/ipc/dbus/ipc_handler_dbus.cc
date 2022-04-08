@@ -37,7 +37,7 @@ bool IPCHandlerDBus::Run() {
 
   dbus_thread_ = new base::Thread("D-Bus Thread");
   base::Thread::Options thread_options;
-  btbase::set_message_loop_type_IO(thread_options);
+  thread_options.message_loop_type = base::MessageLoop::TYPE_IO;
   dbus_thread_->StartWithOptions(thread_options);
 
   dbus_thread_->task_runner()->PostTask(

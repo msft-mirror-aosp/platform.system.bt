@@ -23,6 +23,10 @@
 #include "hci/hci_packets.h"
 #include "model/controller/link_layer_controller.h"
 
+namespace {
+const std::string kCarKitPropertiesFile = "/etc/bluetooth/car_kit_controller_properties.json";
+}  // namespace
+
 namespace test_vendor_lib {
 
 class CarKit : public Device {

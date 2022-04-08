@@ -7,14 +7,6 @@
 #include "declarations.h"
 #include "language_y.h"
 
-#ifndef YYSTYPE
-#define YYSTYPE yy::parser::semantic_type
-#endif
-
-#ifndef YYLTYPE
-#define YYLTYPE yy::parser::location_type
-#endif
-
 using token = yy::parser::token;
 
 #define YY_USER_ACTION yylloc->step(); yylloc->columns(yyleng);
@@ -72,7 +64,6 @@ string_literal \".*\"
 "enum"                  { return(token::ENUM); }
 "group"                 { return(token::GROUP); }
 "packet"                { return(token::PACKET); }
-"test"                  { return(token::TEST); }
 "struct"                { return(token::STRUCT); }
 "little_endian_packets" {
                           yylval->integer = 1;

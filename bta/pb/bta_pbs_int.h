@@ -24,8 +24,8 @@
 #ifndef BTA_PBS_INT_H
 #define BTA_PBS_INT_H
 
-#include <cstdint>
-#include "bt_target.h"  // Must be first to define build configuration
+#include "bt_target.h"
+#include "bta_sys.h"
 
 /*****************************************************************************
  *  Constants and data types

@@ -18,7 +18,6 @@
 
 #include <gmock/gmock.h>
 
-#include "abstract_message_loop.h"
 #include "service/daemon.h"
 
 namespace bluetooth {
@@ -30,7 +29,7 @@ class MockDaemon : public Daemon {
   ~MockDaemon() override = default;
 
   MOCK_CONST_METHOD0(GetSettings, Settings*());
-  MOCK_CONST_METHOD0(GetMessageLoop, btbase::AbstractMessageLoop*());
+  MOCK_CONST_METHOD0(GetMessageLoop, base::MessageLoop*());
   MOCK_METHOD0(StartMainLoop, void());
   MOCK_METHOD0(Init, bool());
 

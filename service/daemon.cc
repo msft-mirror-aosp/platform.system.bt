@@ -21,7 +21,6 @@
 #include <base/logging.h>
 #include <base/run_loop.h>
 
-#include "abstract_message_loop.h"
 #include "service/adapter.h"
 #include "service/hal/bluetooth_av_interface.h"
 #include "service/hal/bluetooth_avrcp_interface.h"
@@ -52,7 +51,7 @@ class DaemonImpl : public Daemon, public ipc::IPCManager::Delegate {
 
   Settings* GetSettings() const override { return settings_.get(); }
 
-  btbase::AbstractMessageLoop* GetMessageLoop() const override {
+  base::MessageLoop* GetMessageLoop() const override {
     return message_loop_.get();
   }
 
@@ -129,7 +128,7 @@ class DaemonImpl : public Daemon, public ipc::IPCManager::Delegate {
 
   bool Init() override {
     CHECK(!initialized_);
-    message_loop_.reset(new btbase::AbstractMessageLoop());
+    message_loop_.reset(new base::MessageLoop());
 
     settings_.reset(new Settings());
     if (!settings_->Init()) {
@@ -157,7 +156,7 @@ class DaemonImpl : public Daemon, public ipc::IPCManager::Delegate {
   }
 
   bool initialized_;
-  std::unique_ptr<btbase::AbstractMessageLoop> message_loop_;
+  std::unique_ptr<base::MessageLoop> message_loop_;
   std::unique_ptr<Settings> settings_;
   std::unique_ptr<Adapter> adapter_;
   std::unique_ptr<ipc::IPCManager> ipc_manager_;

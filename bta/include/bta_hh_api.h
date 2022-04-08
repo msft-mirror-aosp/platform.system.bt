@@ -18,12 +18,12 @@
 #ifndef BTA_HH_API_H
 #define BTA_HH_API_H
 
-#include <base/strings/stringprintf.h>
-#include <cstdint>
-#include <string>
+#include "bta_api.h"
+#include "hidh_api.h"
 
-#include "bta/include/bta_api.h"
-#include "stack/include/hiddefs.h"
+#if (BTA_HH_LE_INCLUDED == TRUE)
+#include "gatt_api.h"
+#endif
 
 /*****************************************************************************
  *  Constants and Type Definitions
@@ -38,12 +38,6 @@
 
 #ifndef BTA_HH_SSR_MIN_TOUT_DEF
 #define BTA_HH_SSR_MIN_TOUT_DEF 2
-#endif
-
-#ifndef CASE_RETURN_TEXT
-#define CASE_RETURN_TEXT(code) \
-  case code:                   \
-    return #code
 #endif
 
 /* BTA HID Host callback events */
@@ -83,6 +77,7 @@ typedef uint16_t tBTA_HH_EVT;
 #define BTA_HH_IDX_INVALID 0xff
 #define BTA_HH_MAX_KNOWN HID_HOST_MAX_DEVICES
 
+#if (BTA_HH_LE_INCLUDED == TRUE)
 /* GATT_MAX_PHY_CHANNEL can not exceed 14 for the design of BTA HH */
 #if GATT_MAX_PHY_CHANNEL > 14
 #define BTA_HH_LE_MAX_KNOWN 14
@@ -91,6 +86,9 @@ typedef uint16_t tBTA_HH_EVT;
 #endif
 
 #define BTA_HH_MAX_DEVICE (HID_HOST_MAX_DEVICES + BTA_HH_LE_MAX_KNOWN)
+#else
+#define BTA_HH_MAX_DEVICE HID_HOST_MAX_DEVICES
+#endif
 /* invalid device handle */
 #define BTA_HH_INVALID_HANDLE 0xff
 
@@ -117,8 +115,8 @@ typedef uint8_t tBTA_HH_BOOT_RPT_ID;
 #define BTA_HH_DEVT_OTHER 0x80
 typedef uint8_t tBTA_HH_DEVT;
 
-typedef enum : uint8_t {
-  BTA_HH_OK = 0,
+enum {
+  BTA_HH_OK,
   BTA_HH_HS_HID_NOT_READY,  /* handshake error : device not ready */
   BTA_HH_HS_INVALID_RPT_ID, /* handshake error : invalid report ID */
   BTA_HH_HS_TRANS_NOT_SPT,  /* handshake error : transaction not spt */
@@ -136,34 +134,17 @@ typedef enum : uint8_t {
   BTA_HH_ERR_AUTH_FAILED, /* authentication fail */
   BTA_HH_ERR_HDL,
   BTA_HH_ERR_SEC
-} tBTA_HH_STATUS;
+};
+typedef uint8_t tBTA_HH_STATUS;
 
-inline tBTA_HH_STATUS to_bta_hh_status(uint32_t status) {
-  return static_cast<tBTA_HH_STATUS>(status);
-}
-
-inline std::string bta_hh_status_text(const tBTA_HH_STATUS& status) {
-  switch (status) {
-    CASE_RETURN_TEXT(BTA_HH_OK);
-    CASE_RETURN_TEXT(BTA_HH_HS_HID_NOT_READY);
-    CASE_RETURN_TEXT(BTA_HH_HS_INVALID_RPT_ID);
-    CASE_RETURN_TEXT(BTA_HH_HS_TRANS_NOT_SPT);
-    CASE_RETURN_TEXT(BTA_HH_HS_INVALID_PARAM);
-    CASE_RETURN_TEXT(BTA_HH_HS_ERROR);
-    CASE_RETURN_TEXT(BTA_HH_ERR);
-    CASE_RETURN_TEXT(BTA_HH_ERR_SDP);
-    CASE_RETURN_TEXT(BTA_HH_ERR_PROTO);
-    CASE_RETURN_TEXT(BTA_HH_ERR_DB_FULL);
-    CASE_RETURN_TEXT(BTA_HH_ERR_TOD_UNSPT);
-    CASE_RETURN_TEXT(BTA_HH_ERR_NO_RES);
-    CASE_RETURN_TEXT(BTA_HH_ERR_AUTH_FAILED);
-    CASE_RETURN_TEXT(BTA_HH_ERR_HDL);
-    CASE_RETURN_TEXT(BTA_HH_ERR_SEC);
-    default:
-      return std::string("UNKNOWN[%hhu]", status);
-  }
-}
-
+#define BTA_HH_VIRTUAL_CABLE HID_VIRTUAL_CABLE
+#define BTA_HH_NORMALLY_CONNECTABLE HID_NORMALLY_CONNECTABLE
+#define BTA_HH_RECONN_INIT HID_RECONN_INIT
+#define BTA_HH_SDP_DISABLE HID_SDP_DISABLE
+#define BTA_HH_BATTERY_POWER HID_BATTERY_POWER
+#define BTA_HH_REMOTE_WAKE HID_REMOTE_WAKE
+#define BTA_HH_SUP_TOUT_AVLBL HID_SUP_TOUT_AVLBL
+#define BTA_HH_SEC_REQUIRED HID_SEC_REQUIRED
 typedef uint16_t tBTA_HH_ATTR_MASK;
 
 /* supported type of device and corresponding application ID */
@@ -217,16 +198,13 @@ typedef struct {
   uint16_t
       ssr_min_tout;  /* SSR min timeout, BTA_HH_SSR_PARAM_INVALID if unknown */
   uint8_t ctry_code; /*Country Code.*/
+#if (BTA_HH_LE_INCLUDED == TRUE)
 #define BTA_HH_LE_REMOTE_WAKE 0x01
 #define BTA_HH_LE_NORMAL_CONN 0x02
 
   uint8_t flag;
+#endif
   tBTA_HH_DEV_DESCR descriptor;
-
-  std::string ToString() const {
-    return base::StringPrintf("%04x::%04x::%04x", vendor_id, product_id,
-                              version);
-  }
 } tBTA_HH_DEV_DSCP_INFO;
 
 /* callback event data for BTA_HH_OPEN_EVT */
@@ -234,8 +212,10 @@ typedef struct {
   RawAddress bda;        /* HID device bd address    */
   tBTA_HH_STATUS status; /* operation status         */
   uint8_t handle;        /* device handle            */
+#if (BTA_HH_LE_INCLUDED == TRUE)
   bool le_hid;         /* is LE devices? */
   bool scps_supported; /* scan parameter service supported */
+#endif
 
 } tBTA_HH_CONN;
 
@@ -331,7 +311,7 @@ typedef void(tBTA_HH_CBACK)(tBTA_HH_EVT event, tBTA_HH* p_data);
  * Returns          void
  *
  ******************************************************************************/
-extern void BTA_HhEnable(tBTA_HH_CBACK* p_cback);
+extern void BTA_HhEnable(tBTA_SEC sec_mask, tBTA_HH_CBACK* p_cback);
 
 /*******************************************************************************
  *
@@ -355,7 +335,8 @@ extern void BTA_HhDisable(void);
  * Returns          void
  *
  ******************************************************************************/
-extern void BTA_HhOpen(const RawAddress& dev_bda);
+extern void BTA_HhOpen(const RawAddress& dev_bda, tBTA_HH_PROTO_MODE mode,
+                       tBTA_SEC sec_mask);
 
 /*******************************************************************************
  *
@@ -515,5 +496,26 @@ extern void BTA_HhAddDev(const RawAddress& bda, tBTA_HH_ATTR_MASK attr_mask,
  *
  ******************************************************************************/
 extern void BTA_HhRemoveDev(uint8_t dev_handle);
+
+/*******************************************************************************
+ *
+ *              Parsing Utility Functions
+ *
+ ******************************************************************************/
+/*******************************************************************************
+ *
+ * Function         BTA_HhParseBootRpt
+ *
+ * Description      This utility function parse a boot mode report.
+ *
+ * Returns          void
+ *
+ ******************************************************************************/
+extern void BTA_HhParseBootRpt(tBTA_HH_BOOT_RPT* p_data, uint8_t* p_report,
+                               uint16_t report_len);
+
+/* test commands */
+extern void bta_hh_le_hid_read_rpt_clt_cfg(const RawAddress& bd_addr,
+                                           uint8_t rpt_id);
 
 #endif /* BTA_HH_API_H */

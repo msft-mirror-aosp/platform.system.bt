@@ -22,7 +22,6 @@
 #include <base/logging.h>
 #include <base/observer_list.h>
 
-#include "abstract_observer_list.h"
 #include "service/hal/bluetooth_interface.h"
 #include "service/logging_helpers.h"
 
@@ -52,11 +51,11 @@ shared_mutex_impl g_instance_lock;
 
 // Helper for obtaining the observer lists. This is forward declared here
 // and defined below since it depends on BluetoothInterfaceImpl.
-btbase::AbstractObserverList<BluetoothGattInterface::ScannerObserver>*
+base::ObserverList<BluetoothGattInterface::ScannerObserver>*
 GetScannerObservers();
-btbase::AbstractObserverList<BluetoothGattInterface::ClientObserver>*
+base::ObserverList<BluetoothGattInterface::ClientObserver>*
 GetClientObservers();
-btbase::AbstractObserverList<BluetoothGattInterface::ServerObserver>*
+base::ObserverList<BluetoothGattInterface::ServerObserver>*
 GetServerObservers();
 
 #define FOR_EACH_SCANNER_OBSERVER(func)           \
@@ -404,7 +403,6 @@ const btgatt_client_callbacks_t gatt_client_callbacks = {
     ServicesAddedCallback,
     nullptr,
     nullptr,
-    nullptr,  // service_changed_cb
 };
 
 const btgatt_server_callbacks_t gatt_server_callbacks = {
@@ -507,15 +505,15 @@ class BluetoothGattInterfaceImpl : public BluetoothGattInterface {
     return true;
   }
 
-  btbase::AbstractObserverList<ScannerObserver>* scanner_observers() {
+  base::ObserverList<ScannerObserver>* scanner_observers() {
     return &scanner_observers_;
   }
 
-  btbase::AbstractObserverList<ClientObserver>* client_observers() {
+  base::ObserverList<ClientObserver>* client_observers() {
     return &client_observers_;
   }
 
-  btbase::AbstractObserverList<ServerObserver>* server_observers() {
+  base::ObserverList<ServerObserver>* server_observers() {
     return &server_observers_;
   }
 
@@ -524,9 +522,9 @@ class BluetoothGattInterfaceImpl : public BluetoothGattInterface {
   // We're not using a base::ObserverListThreadSafe, which it posts observer
   // events automatically on the origin threads, as we want to avoid that
   // overhead and simply forward the events to the upper layer.
-  btbase::AbstractObserverList<ScannerObserver> scanner_observers_;
-  btbase::AbstractObserverList<ClientObserver> client_observers_;
-  btbase::AbstractObserverList<ServerObserver> server_observers_;
+  base::ObserverList<ScannerObserver> scanner_observers_;
+  base::ObserverList<ClientObserver> client_observers_;
+  base::ObserverList<ServerObserver> server_observers_;
 
   // The HAL handle obtained from the shared library. We hold a weak reference
   // to this since the actual data resides in the shared Bluetooth library.
@@ -537,21 +535,21 @@ class BluetoothGattInterfaceImpl : public BluetoothGattInterface {
 
 namespace {
 
-btbase::AbstractObserverList<BluetoothGattInterface::ScannerObserver>*
+base::ObserverList<BluetoothGattInterface::ScannerObserver>*
 GetScannerObservers() {
   CHECK(g_interface);
   return static_cast<BluetoothGattInterfaceImpl*>(g_interface)
       ->scanner_observers();
 }
 
-btbase::AbstractObserverList<BluetoothGattInterface::ClientObserver>*
+base::ObserverList<BluetoothGattInterface::ClientObserver>*
 GetClientObservers() {
   CHECK(g_interface);
   return static_cast<BluetoothGattInterfaceImpl*>(g_interface)
       ->client_observers();
 }
 
-btbase::AbstractObserverList<BluetoothGattInterface::ServerObserver>*
+base::ObserverList<BluetoothGattInterface::ServerObserver>*
 GetServerObservers() {
   CHECK(g_interface);
   return static_cast<BluetoothGattInterfaceImpl*>(g_interface)

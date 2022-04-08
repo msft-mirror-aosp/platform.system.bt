@@ -17,10 +17,8 @@
 #include "reactive_semaphore.h"
 
 #include <error.h>
-#include <string.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
-
 #include <functional>
 
 #include "os/linux_generic/linux.h"

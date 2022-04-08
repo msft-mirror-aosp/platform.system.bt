@@ -26,40 +26,37 @@ static_library("types") {
   ]
 
   include_dirs = [
-    "//bt",
+    "//",
   ]
 
-  configs += [
-    "//bt:target_defaults",
+  deps = [
+    "//third_party/libchrome:base",
   ]
 }
 
-if (use.test) {
-  executable("types_unittests") {
-    sources = [
-      "test/address_unittest.cc",
-      "test/bluetooth/uuid_unittest.cc",
-    ]
+executable("types_unittests") {
+  testonly = true
+  sources = [
+    "test/address_unittest.cc",
+    "test/bluetooth/uuid_unittest.cc",
+  ]
 
-    include_dirs = [
-      "//bt",
-    ]
+  include_dirs = [
+    "//",
+  ]
 
-    libs = [
-      "dl",
-      "pthread",
-      "resolv",
-      "rt",
-      "z",
-    ]
+  libs = [
+     "-ldl",
+     "-lpthread",
+     "-lresolv",
+     "-lrt",
+     "-lz",
+     "-latomic",
+  ]
 
-    deps = [
-      "//bt/types",
-    ]
-
-    configs += [
-      "//bt:external_gmock_main",
-      "//bt:target_defaults",
-    ]
-  }
+  deps = [
+    "//types",
+    "//third_party/googletest:gmock_main",
+    "//third_party/libchrome:base",
+  ]
 }

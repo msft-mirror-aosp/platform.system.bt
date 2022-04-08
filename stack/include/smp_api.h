@@ -26,7 +26,6 @@
 
 #include "bt_target.h"
 #include "smp_api_types.h"
-#include "types/bt_transport.h"
 
 /*****************************************************************************
  *  External Function Declarations
@@ -115,7 +114,7 @@ extern bool SMP_PairCancel(const RawAddress& bd_addr);
  * Returns          None
  *
  ******************************************************************************/
-extern void SMP_SecurityGrant(const RawAddress& bd_addr, tSMP_STATUS res);
+extern void SMP_SecurityGrant(const RawAddress& bd_addr, uint8_t res);
 
 /*******************************************************************************
  *
@@ -177,28 +176,37 @@ extern void SMP_SecureConnectionOobDataReply(uint8_t* p_data);
 
 /*******************************************************************************
  *
- * Function         SMP_CrLocScOobData
+ * Function         SMP_KeypressNotification
  *
- * Description      This function is called to generate a public key to be
- *                  passed to a remote device via an Out of Band transport
+ * Description      Notify SM about Keypress Notification.
+ *
+ * Parameters:      bd_addr      - Address of the device to send keypress
+ *                                 notification to
+ *                  value        - keypress notification parameter value
  *
  ******************************************************************************/
-extern void SMP_CrLocScOobData();
+extern void SMP_KeypressNotification(const RawAddress& bd_addr, uint8_t value);
 
 /*******************************************************************************
  *
- * Function         SMP_ClearLocScOobData
+ * Function         SMP_CreateLocalSecureConnectionsOobData
  *
- * Description      This function is called to clear out the OOB stored locally.
+ * Description      This function is called to start creation of local SC OOB
+ *                  data set (tSMP_LOC_OOB_DATA).
  *
+ * Parameters:      bd_addr      - Address of the device to send OOB data block
+ *                                 to.
+ *
+ *  Returns         Boolean - true: creation of local SC OOB data set started.
  ******************************************************************************/
-extern void SMP_ClearLocScOobData();
+extern bool SMP_CreateLocalSecureConnectionsOobData(
+    tBLE_BD_ADDR* addr_to_send_to);
 
 // Called when LTK request is received from controller.
 extern bool smp_proc_ltk_request(const RawAddress& bda);
 
-// Called when link is encrypted and notified to peripheral device.
-// Proceed to send LTK, DIV and ER to central if bonding the devices.
+// Called when link is encrypted and notified to slave device.
+// Proceed to send LTK, DIV and ER to master if bonding the devices.
 extern void smp_link_encrypted(const RawAddress& bda, uint8_t encr_enable);
 
 #endif /* SMP_API_H */

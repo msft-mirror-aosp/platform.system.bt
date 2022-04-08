@@ -19,9 +19,7 @@
 #include <cstdint>
 #include <forward_list>
 #include <memory>
-#include <type_traits>
 
-#include "packet/custom_field_fixed_size_interface.h"
 #include "packet/view.h"
 
 namespace bluetooth {
@@ -31,18 +29,20 @@ namespace packet {
 template <bool little_endian>
 class Iterator : public std::iterator<std::random_access_iterator_tag, uint8_t> {
  public:
-  Iterator(const std::forward_list<View>& data, size_t offset);
+  Iterator(std::forward_list<View> data, size_t offset);
   Iterator(const Iterator& itr) = default;
   virtual ~Iterator() = default;
 
   // All addition and subtraction operators are unbounded.
   Iterator operator+(int offset);
   Iterator& operator+=(int offset);
+  Iterator operator++(int);
   Iterator& operator++();
 
   Iterator operator-(int offset);
   int operator-(Iterator& itr);
   Iterator& operator-=(int offset);
+  Iterator operator--(int);
   Iterator& operator--();
 
   Iterator& operator=(const Iterator& itr);
@@ -57,33 +57,22 @@ class Iterator : public std::iterator<std::random_access_iterator_tag, uint8_t> 
   bool operator>=(const Iterator& itr) const;
 
   uint8_t operator*() const;
+  uint8_t operator->() const;
 
   size_t NumBytesRemaining() const;
 
   Iterator Subrange(size_t index, size_t length) const;
 
   // Get the next sizeof(FixedWidthPODType) bytes and return the filled type
-  template <typename FixedWidthPODType, typename std::enable_if<std::is_pod<FixedWidthPODType>::value, int>::type = 0>
+  template <typename FixedWidthPODType>
   FixedWidthPODType extract() {
     static_assert(std::is_pod<FixedWidthPODType>::value, "Iterator::extract requires a fixed-width type.");
-    FixedWidthPODType extracted_value{};
+    FixedWidthPODType extracted_value;
     uint8_t* value_ptr = (uint8_t*)&extracted_value;
 
     for (size_t i = 0; i < sizeof(FixedWidthPODType); i++) {
       size_t index = (little_endian ? i : sizeof(FixedWidthPODType) - i - 1);
-      value_ptr[index] = this->operator*();
-      this->operator++();
-    }
-    return extracted_value;
-  }
-
-  template <typename T, typename std::enable_if<std::is_base_of_v<CustomFieldFixedSizeInterface<T>, T>, int>::type = 0>
-  T extract() {
-    T extracted_value{};
-    for (size_t i = 0; i < CustomFieldFixedSizeInterface<T>::length(); i++) {
-      size_t index = (little_endian ? i : CustomFieldFixedSizeInterface<T>::length() - i - 1);
-      extracted_value.data()[index] = this->operator*();
-      this->operator++();
+      value_ptr[index] = *((*this)++);
     }
     return extracted_value;
   }

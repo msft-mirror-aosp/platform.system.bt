@@ -19,7 +19,6 @@
 #include <base/macros.h>
 #include <base/observer_list.h>
 
-#include "abstract_observer_list.h"
 #include "service/hal/bluetooth_av_interface.h"
 
 namespace bluetooth {
@@ -89,8 +88,8 @@ class FakeBluetoothAvInterface : public BluetoothAvInterface {
   const btav_sink_interface_t* GetA2dpSinkHALInterface() override;
 
  private:
-  btbase::AbstractObserverList<A2dpSourceObserver> a2dp_source_observers_;
-  btbase::AbstractObserverList<A2dpSinkObserver> a2dp_sink_observers_;
+  base::ObserverList<A2dpSourceObserver> a2dp_source_observers_;
+  base::ObserverList<A2dpSinkObserver> a2dp_sink_observers_;
 
   DISALLOW_COPY_AND_ASSIGN(FakeBluetoothAvInterface);
 };

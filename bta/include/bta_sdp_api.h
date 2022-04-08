@@ -24,15 +24,12 @@
 #ifndef BTA_SDP_API_H
 #define BTA_SDP_API_H
 
-#include <cstdint>
+#include <hardware/bt_sdp.h>
 
-#include "bt_target.h"  // Must be first to define build configuration
-
-#include "bta/include/bta_api.h"
-#include "bta/include/bta_sdp_api.h"
-#include "include/hardware/bt_sdp.h"  // bluetooth_sdp_record
-#include "types/bluetooth/uuid.h"
-#include "types/raw_address.h"
+#include "bt_target.h"
+#include "bt_types.h"
+#include "bta_api.h"
+#include "btm_api.h"
 
 using bluetooth::Uuid;
 

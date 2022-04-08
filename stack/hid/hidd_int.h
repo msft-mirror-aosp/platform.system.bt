@@ -26,12 +26,9 @@
 #ifndef HIDD_INT_H
 #define HIDD_INT_H
 
-#include <cstdint>
-
-#include "stack/hid/hid_conn.h"
-#include "stack/include/hidd_api.h"
-#include "stack/include/l2c_api.h"  // tL2CAP_CFG_INFO && FLOW_SPEC
-#include "types/raw_address.h"
+#include "hid_conn.h"
+#include "hidd_api.h"
+#include "l2c_api.h"
 
 enum { HIDD_DEV_NO_CONN, HIDD_DEV_CONNECTED };
 

@@ -23,13 +23,9 @@
  *
  ******************************************************************************/
 
-#include "bt_target.h"  // Must be first to define build configuration
-
-#include "bta/ag/bta_ag_int.h"
-#include "bta/include/bta_ag_api.h"
-#include "osi/include/allocator.h"
-#include "osi/include/compat.h"
-#include "stack/include/bt_types.h"
+#include "bt_common.h"
+#include "bta_ag_api.h"
+#include "bta_ag_int.h"
 
 #ifndef BTA_AG_CIND_INFO
 #define BTA_AG_CIND_INFO                                                       \

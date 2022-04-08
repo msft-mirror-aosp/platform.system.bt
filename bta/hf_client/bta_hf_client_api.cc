@@ -24,17 +24,11 @@
  *
  ******************************************************************************/
 
-#include <cstdint>
+#include <string.h>
 
-#include "bt_trace.h"  // Legacy trace logging
-
-#include "bta/hf_client/bta_hf_client_int.h"
-#include "bta/include/bta_hf_client_api.h"
-#include "bta/sys/bta_sys.h"
-#include "osi/include/allocator.h"
+#include "bta_hf_client_api.h"
+#include "bta_hf_client_int.h"
 #include "osi/include/compat.h"
-#include "stack/include/bt_types.h"
-#include "types/raw_address.h"
 
 /*****************************************************************************
  *  External Function Declarations
@@ -55,10 +49,10 @@
  * Returns          BTA_SUCCESS if OK, BTA_FAILURE otherwise.
  *
  ******************************************************************************/
-tBTA_STATUS BTA_HfClientEnable(tBTA_HF_CLIENT_CBACK* p_cback,
+tBTA_STATUS BTA_HfClientEnable(tBTA_HF_CLIENT_CBACK* p_cback, tBTA_SEC sec_mask,
                                tBTA_HF_CLIENT_FEAT features,
                                const char* p_service_name) {
-  return bta_hf_client_api_enable(p_cback, features, p_service_name);
+  return bta_hf_client_api_enable(p_cback, sec_mask, features, p_service_name);
 }
 
 /*******************************************************************************
@@ -82,7 +76,8 @@ void BTA_HfClientDisable(void) { bta_hf_client_api_disable(); }
  * Returns          void
  *
  ******************************************************************************/
-void BTA_HfClientOpen(const RawAddress& bd_addr, uint16_t* p_handle) {
+void BTA_HfClientOpen(const RawAddress& bd_addr, tBTA_SEC sec_mask,
+                      uint16_t* p_handle) {
   APPL_TRACE_DEBUG("%s", __func__);
   tBTA_HF_CLIENT_API_OPEN* p_buf =
       (tBTA_HF_CLIENT_API_OPEN*)osi_malloc(sizeof(tBTA_HF_CLIENT_API_OPEN));
@@ -95,6 +90,7 @@ void BTA_HfClientOpen(const RawAddress& bd_addr, uint16_t* p_handle) {
   p_buf->hdr.event = BTA_HF_CLIENT_API_OPEN_EVT;
   p_buf->hdr.layer_specific = *p_handle;
   p_buf->bd_addr = bd_addr;
+  p_buf->sec_mask = sec_mask;
 
   bta_sys_sendmsg(p_buf);
 }
@@ -111,7 +107,7 @@ void BTA_HfClientOpen(const RawAddress& bd_addr, uint16_t* p_handle) {
  *
  ******************************************************************************/
 void BTA_HfClientClose(uint16_t handle) {
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
 
   p_buf->event = BTA_HF_CLIENT_API_CLOSE_EVT;
   p_buf->layer_specific = handle;
@@ -131,7 +127,7 @@ void BTA_HfClientClose(uint16_t handle) {
  *
  ******************************************************************************/
 void BTA_HfClientAudioOpen(uint16_t handle) {
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
 
   p_buf->event = BTA_HF_CLIENT_API_AUDIO_OPEN_EVT;
   p_buf->layer_specific = handle;
@@ -151,7 +147,7 @@ void BTA_HfClientAudioOpen(uint16_t handle) {
  *
  ******************************************************************************/
 void BTA_HfClientAudioClose(uint16_t handle) {
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
 
   p_buf->event = BTA_HF_CLIENT_API_AUDIO_CLOSE_EVT;
   p_buf->layer_specific = handle;

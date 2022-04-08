@@ -21,9 +21,6 @@
  *  Data types
  ****************************************************************************/
 
-#include <cstdint>
-#include "osi/include/alarm.h"
-
 /* ASCII character string of arguments to the AT command */
 #define BTA_HF_CLIENT_AT_MAX_LEN 512
 

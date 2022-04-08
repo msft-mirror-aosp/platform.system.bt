@@ -75,15 +75,15 @@ static void btif_gatt_cleanup(void) {
 }
 
 static btgatt_interface_t btgattInterface = {
-    .size = sizeof(btgattInterface),
+    sizeof(btgattInterface),
 
-    .init = btif_gatt_init,
-    .cleanup = btif_gatt_cleanup,
+    btif_gatt_init,
+    btif_gatt_cleanup,
 
-    .client = &btgattClientInterface,
-    .server = &btgattServerInterface,
-    .scanner = nullptr,    // filled in btif_gatt_get_interface
-    .advertiser = nullptr  // filled in btif_gatt_get_interface
+    &btgattClientInterface,
+    &btgattServerInterface,
+    nullptr,  // filled in btif_gatt_get_interface
+    nullptr   // filled in btif_gatt_get_interface
 };
 
 /*******************************************************************************

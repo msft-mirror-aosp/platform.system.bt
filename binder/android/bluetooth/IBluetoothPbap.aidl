@@ -17,7 +17,6 @@
 package android.bluetooth;
 
 import android.bluetooth.BluetoothDevice;
-import android.content.AttributionSource;
 
 /**
  * System private API for Bluetooth pbap service
@@ -25,14 +24,9 @@ import android.content.AttributionSource;
  * {@hide}
  */
 interface IBluetoothPbap {
-    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)")
-    List<BluetoothDevice> getConnectedDevices(in AttributionSource attributionSource);
-    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)")
-    List<BluetoothDevice> getDevicesMatchingConnectionStates(in int[] states, in AttributionSource attributionSource);
-    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
-    int getConnectionState(in BluetoothDevice device, in AttributionSource attributionSource);
-    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)")
-    void disconnect(in BluetoothDevice device, in AttributionSource attributionSource);
-    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
-    boolean setConnectionPolicy(in BluetoothDevice device, int connectionPolicy, in AttributionSource attributionSource);
+    List<BluetoothDevice> getConnectedDevices();
+    List<BluetoothDevice> getDevicesMatchingConnectionStates(in int[] states);
+    int getConnectionState(in BluetoothDevice device);
+    void disconnect(in BluetoothDevice device);
+    boolean setConnectionPolicy(in BluetoothDevice device, int connectionPolicy);
 }

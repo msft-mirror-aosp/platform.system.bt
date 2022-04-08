@@ -20,54 +20,43 @@ static_library("types") {
   ]
 
   sources = [
-    "class_of_device.cc",
     "bluetooth/uuid.cc",
+    "le_address.cc",
     "raw_address.cc",
   ]
 
   include_dirs = [
-    "//bt/",
+    "//",
   ]
 
-  configs += [
-    "//bt:target_defaults",
+  deps = [
+    "//third_party/libchrome:base",
   ]
 }
 
-if (use.test) {
-  executable("net_test_types") {
-    sources = [
-      "test/class_of_device_unittest.cc",
-      "test/raw_address_unittest.cc",
-      "test/bluetooth/uuid_unittest.cc",
-    ]
+executable("types_unittests") {
+  testonly = true
+  sources = [
+    "test/raw_address_unittest.cc",
+    "test/bluetooth/uuid_unittest.cc",
+  ]
 
-    include_dirs = [
-      "//bt/",
-    ]
+  include_dirs = [
+    "//",
+  ]
 
-    libs = [
-      "dl",
-      "pthread",
-      "resolv",
-      "rt",
-      "z",
-    ]
+  libs = [
+     "-ldl",
+     "-lpthread",
+     "-lresolv",
+     "-lrt",
+     "-lz",
+     "-latomic",
+  ]
 
-    # For some reason, this is required for host build. Otherwise, I get
-    # a complaint from gmock:
-    #   undefined reference to symbol 'pthread_getspecific@@GLIBC_2.2.5'
-    ldflags = [
-      "-lpthread"
-    ]
-
-    deps = [
-      ":types",
-    ]
-
-    configs += [
-      "//bt:external_gmock_main",
-      "//bt:target_defaults",
-    ]
-  }
+  deps = [
+    "//types",
+    "//third_party/googletest:gmock_main",
+    "//third_party/libchrome:base",
+  ]
 }

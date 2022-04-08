@@ -32,7 +32,8 @@ using bluetooth::common::OnceTimer;
 using bluetooth::common::RepeatingTimer;
 using bluetooth::common::time_get_os_boottime_us;
 
-bluetooth::common::MessageLoopThread* get_main_thread() { return nullptr; }
+// fake get_main_message_loop implementation for alarm
+base::MessageLoop* get_main_message_loop() { return nullptr; }
 
 namespace {
 std::unordered_map<int, int> g_map;

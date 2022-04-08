@@ -24,6 +24,5 @@ import android.bluetooth.BluetoothDevice;
  * @hide
  */
 oneway interface IBluetoothMetadataListener {
-    @JavaPassthrough(annotation="@android.annotation.RequiresNoPermission")
     void onMetadataChanged(in BluetoothDevice devices, in int key, in byte[] value);
 }

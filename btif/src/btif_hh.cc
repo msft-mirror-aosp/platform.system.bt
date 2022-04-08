@@ -27,22 +27,33 @@
 
 #define LOG_TAG "bt_btif_hh"
 
-#include <cstdint>
+#include "btif_hh.h"
 
-#include "btif/include/btif_common.h"
-#include "btif/include/btif_hh.h"
-#include "btif/include/btif_storage.h"
-#include "btif/include/btif_util.h"
-#include "include/hardware/bt_hh.h"
-#include "main/shim/dumpsys.h"
-#include "osi/include/allocator.h"
+#include <base/logging.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "bt_common.h"
+#include "bta_api.h"
+#include "btif_common.h"
+#include "btif_storage.h"
+#include "btif_util.h"
+#include "l2c_api.h"
 #include "osi/include/log.h"
-#include "stack/include/hidh_api.h"
-#include "stack/include/l2c_api.h"
+#include "osi/include/osi.h"
+
+#define BTIF_HH_APP_ID_MI 0x01
+#define BTIF_HH_APP_ID_KB 0x02
 
 #define COD_HID_KEYBOARD 0x0540
 #define COD_HID_POINTING 0x0580
 #define COD_HID_COMBO 0x05C0
+
+#define KEYSTATE_FILEPATH \
+  "/data/misc/bluedroid/bt_hh_ks"  // keep this in sync with HID host jni
 
 #define HID_REPORT_CAPSLOCK 0x39
 #define HID_REPORT_NUMLOCK 0x53
@@ -55,12 +66,18 @@
 #define LOGITECH_KB_MX5500_VENDOR_ID 0x046D
 #define LOGITECH_KB_MX5500_PRODUCT_ID 0xB30B
 
+extern const int BT_UID;
+extern const int BT_GID;
 static int btif_hh_keylockstates = 0;  // The current key state of each key
 
-// TODO This is duplicated in header file with different value
+#define BTIF_HH_ID_1 0
 #define BTIF_HH_DEV_DISCONNECTED 3
 
 #define BTIF_TIMEOUT_VUP_MS (3 * 1000)
+
+#ifndef BTUI_HH_SECURITY
+#define BTUI_HH_SECURITY (BTA_SEC_AUTHENTICATE | BTA_SEC_ENCRYPT)
+#endif
 
 /* HH request events */
 typedef enum {
@@ -72,6 +89,7 @@ typedef enum {
 /*******************************************************************************
  *  Constants & Macros
  ******************************************************************************/
+#define BTIF_HH_SERVICES (BTA_HID_SERVICE_MASK)
 
 /*******************************************************************************
  *  Local type definitions
@@ -112,19 +130,30 @@ static tHID_KB_LIST hid_kb_numlock_on_list[] = {{LOGITECH_KB_MX5500_PRODUCT_ID,
 /*******************************************************************************
  *  Externs
  ******************************************************************************/
-extern bool check_cod(const RawAddress* remote_bdaddr, uint32_t cod);
-extern bool check_cod_hid(const RawAddress* remote_bdaddr);
 extern void bta_hh_co_destroy(int fd);
+extern void bta_hh_co_write(int fd, uint8_t* rpt, uint16_t len);
+extern bt_status_t btif_dm_remove_bond(const RawAddress* bd_addr);
 extern void bta_hh_co_send_hid_info(btif_hh_device_t* p_dev,
                                     const char* dev_name, uint16_t vendor_id,
                                     uint16_t product_id, uint16_t version,
                                     uint8_t ctry_code, int dscp_len,
                                     uint8_t* p_dscp);
-extern void bta_hh_co_write(int fd, uint8_t* rpt, uint16_t len);
-extern void bte_hh_evt(tBTA_HH_EVT event, tBTA_HH* p_data);
+extern bool check_cod(const RawAddress* remote_bdaddr, uint32_t cod);
+extern void btif_dm_cb_remove_bond(const RawAddress* bd_addr);
+extern bool check_cod_hid(const RawAddress* remote_bdaddr);
+extern int scru_ascii_2_hex(char* p_ascii, int len, uint8_t* p_hex);
 extern void btif_dm_hh_open_failed(RawAddress* bdaddr);
 extern void btif_hd_service_registration();
-extern void btif_hh_timer_timeout(void* data);
+
+/*****************************************************************************
+ *  Local Function prototypes
+ ****************************************************************************/
+static void set_keylockstate(int keymask, bool isSet);
+static void toggle_os_keylockstates(int fd, int changedkeystates);
+static void sync_lockstate_on_connect(btif_hh_device_t* p_dev);
+// static void hh_update_keyboard_lockstates(btif_hh_device_t *p_dev);
+void btif_hh_timer_timeout(void* data);
+void bte_hh_evt(tBTA_HH_EVT event, tBTA_HH* p_data);
 
 /*******************************************************************************
  *  Functions
@@ -431,7 +460,7 @@ void btif_hh_remove_device(RawAddress bd_addr) {
     p_added_dev = &btif_hh_cb.added_devices[i];
     if (p_added_dev->bd_addr == bd_addr) {
       BTA_HhRemoveDev(p_added_dev->dev_handle);
-      btif_storage_remove_hid_info(p_added_dev->bd_addr);
+      btif_storage_remove_hid_info(&(p_added_dev->bd_addr));
       memset(&(p_added_dev->bd_addr), 0, 6);
       p_added_dev->dev_handle = BTA_HH_INVALID_HANDLE;
       break;
@@ -446,13 +475,8 @@ void btif_hh_remove_device(RawAddress bd_addr) {
 
   /* need to notify up-layer device is disconnected to avoid state out of sync
    * with up-layer */
-
-  do_in_jni_thread(base::Bind(
-      [](RawAddress bd_addr) {
-        HAL_CBACK(bt_hh_callbacks, connection_state_cb, &bd_addr,
-                  BTHH_CONN_STATE_DISCONNECTED);
-      },
-      p_dev->bd_addr));
+  HAL_CBACK(bt_hh_callbacks, connection_state_cb, &(p_dev->bd_addr),
+            BTHH_CONN_STATE_DISCONNECTED);
 
   p_dev->dev_status = BTHH_CONN_STATE_UNKNOWN;
   p_dev->dev_handle = BTA_HH_INVALID_HANDLE;
@@ -587,7 +611,7 @@ bt_status_t btif_hh_connect(const RawAddress* bd_addr) {
    pagescan mode, we will do 2 retries to connect before giving up */
   btif_hh_cb.status = BTIF_HH_DEV_CONNECTING;
   btif_hh_cb.pending_conn_address = *bd_addr;
-  BTA_HhOpen(*bd_addr);
+  BTA_HhOpen(*bd_addr, BTA_HH_PROTO_RPT_MODE, BTUI_HH_SECURITY);
 
   // TODO(jpawlowski); make cback accept const and remove tmp!
   auto tmp = *bd_addr;
@@ -605,17 +629,14 @@ bt_status_t btif_hh_connect(const RawAddress* bd_addr) {
  * Returns          void
  *
  ******************************************************************************/
+
 void btif_hh_disconnect(RawAddress* bd_addr) {
-  CHECK(bd_addr != nullptr);
-  const btif_hh_device_t* p_dev = btif_hh_find_connected_dev_by_bda(*bd_addr);
-  if (p_dev == nullptr) {
-    LOG_DEBUG("Unable to disconnect unknown HID device:%s",
-              PRIVATE_ADDRESS((*bd_addr)));
-    return;
-  }
-  LOG_DEBUG("Disconnect and close request for HID device:%s",
-            PRIVATE_ADDRESS((*bd_addr)));
-  BTA_HhClose(p_dev->dev_handle);
+  btif_hh_device_t* p_dev;
+  p_dev = btif_hh_find_connected_dev_by_bda(*bd_addr);
+  if (p_dev != NULL) {
+    BTA_HhClose(p_dev->dev_handle);
+  } else
+    BTIF_TRACE_DEBUG("%s-- Error: device not connected:", __func__);
 }
 
 /*******************************************************************************
@@ -640,26 +661,6 @@ void btif_hh_setreport(btif_hh_device_t* p_dev, bthh_report_type_t r_type,
 
 /*******************************************************************************
  *
- * Function         btif_btif_hh_senddata
- *
- * Description      senddata initiated from the BTIF thread context
- *
- * Returns          void
- *
- ******************************************************************************/
-void btif_hh_senddata(btif_hh_device_t* p_dev, uint16_t size, uint8_t* report) {
-  BT_HDR* p_buf = create_pbuf(size, report);
-  if (p_buf == NULL) {
-    APPL_TRACE_ERROR("%s: Error, failed to allocate RPT buffer, size = %d",
-                     __func__, size);
-    return;
-  }
-  p_buf->layer_specific = BTA_HH_RPTT_OUTPUT;
-  BTA_HhSendData(p_dev->dev_handle, p_dev->bd_addr, p_buf);
-}
-
-/*******************************************************************************
- *
  * Function         btif_hh_service_registration
  *
  * Description      Registers or derigisters the hid host service
@@ -679,7 +680,7 @@ void btif_hh_service_registration(bool enable) {
       btif_hd_service_registration();
     }
   } else if (enable) {
-    BTA_HhEnable(bte_hh_evt);
+    BTA_HhEnable(BTA_SEC_ENCRYPT, bte_hh_evt);
   } else {
     btif_hh_cb.service_dereg_active = TRUE;
     BTA_HhDisable();
@@ -959,7 +960,7 @@ static void btif_hh_upstreams_evt(uint16_t event, char* p_param) {
       }
       if (p_dev->fd < 0) {
         LOG_ERROR(
-
+            LOG_TAG,
             "BTA_HH_GET_DSCP_EVT: Error, failed to find the uhid driver...");
         return;
       }
@@ -1083,7 +1084,7 @@ static void btif_hh_upstreams_evt(uint16_t event, char* p_param) {
       break;
 
     case BTA_HH_API_ERR_EVT:
-      LOG_INFO("BTA_HH API_ERR");
+      LOG_INFO(LOG_TAG, "BTA_HH API_ERR");
       break;
 
     default:
@@ -1146,13 +1147,13 @@ void bte_hh_evt(tBTA_HH_EVT event, tBTA_HH* p_data) {
  ******************************************************************************/
 
 static void btif_hh_handle_evt(uint16_t event, char* p_param) {
-  CHECK(p_param != nullptr);
   RawAddress* bd_addr = (RawAddress*)p_param;
+  BTIF_TRACE_EVENT("%s: event=%d", __func__, event);
+  int ret;
   switch (event) {
     case BTIF_HH_CONNECT_REQ_EVT: {
-      LOG_DEBUG("Connect request received remote:%s",
-                PRIVATE_ADDRESS((*bd_addr)));
-      if (btif_hh_connect(bd_addr) == BT_STATUS_SUCCESS) {
+      ret = btif_hh_connect(bd_addr);
+      if (ret == BT_STATUS_SUCCESS) {
         HAL_CBACK(bt_hh_callbacks, connection_state_cb, bd_addr,
                   BTHH_CONN_STATE_CONNECTING);
       } else
@@ -1161,25 +1162,19 @@ static void btif_hh_handle_evt(uint16_t event, char* p_param) {
     } break;
 
     case BTIF_HH_DISCONNECT_REQ_EVT: {
-      LOG_DEBUG("Disconnect request received remote:%s",
-                PRIVATE_ADDRESS((*bd_addr)));
+      BTIF_TRACE_EVENT("%s: event=%d", __func__, event);
       btif_hh_disconnect(bd_addr);
       HAL_CBACK(bt_hh_callbacks, connection_state_cb, bd_addr,
                 BTHH_CONN_STATE_DISCONNECTING);
     } break;
 
     case BTIF_HH_VUP_REQ_EVT: {
-      LOG_DEBUG("Virtual unplug request received remote:%s",
-                PRIVATE_ADDRESS((*bd_addr)));
-      if (btif_hh_virtual_unplug(bd_addr) != BT_STATUS_SUCCESS) {
-        LOG_WARN("Unable to virtual unplug device remote:%s",
-                 PRIVATE_ADDRESS((*bd_addr)));
-      }
+      BTIF_TRACE_EVENT("%s: event=%d", __func__, event);
+      ret = btif_hh_virtual_unplug(bd_addr);
     } break;
 
     default: {
-      LOG_WARN("Unknown event received:%d remote:%s", event,
-               PRIVATE_ADDRESS((*bd_addr)));
+      BTIF_TRACE_WARNING("%s : Unknown event 0x%x", __func__, event);
     } break;
   }
 }
@@ -1202,7 +1197,7 @@ void btif_hh_timer_timeout(void* data) {
   if (p_dev->dev_status != BTHH_CONN_STATE_CONNECTED) return;
 
   memset(&p_data, 0, sizeof(tBTA_HH));
-  p_data.dev_status.status = BTA_HH_ERR;  // tBTA_HH_STATUS
+  p_data.dev_status.status = BTHH_ERR;
   p_data.dev_status.handle = p_dev->dev_handle;
 
   /* switch context to btif task context */
@@ -1248,12 +1243,8 @@ static bt_status_t connect(RawAddress* bd_addr) {
     btif_transfer_context(btif_hh_handle_evt, BTIF_HH_CONNECT_REQ_EVT,
                           (char*)bd_addr, sizeof(RawAddress), NULL);
     return BT_STATUS_SUCCESS;
-  } else if ((btif_hh_cb.pending_conn_address == *bd_addr) &&
-       (btif_hh_cb.status == BTIF_HH_DEV_CONNECTING)) {
-    LOG(INFO) << __func__ << ": already connecting " << *bd_addr;
+  } else
     return BT_STATUS_BUSY;
-  }
-  return BT_STATUS_FAIL;
 }
 
 /*******************************************************************************
@@ -1359,7 +1350,7 @@ static bt_status_t set_idle_time(RawAddress* bd_addr, uint8_t idle_time) {
     return BT_STATUS_FAIL;
   }
 
-  btif_hh_device_t* p_dev = btif_hh_find_connected_dev_by_bda(*bd_addr);
+  btif_hh_device_t* p_dev = p_dev = btif_hh_find_connected_dev_by_bda(*bd_addr);
   if (p_dev == NULL) {
     BTIF_TRACE_WARNING("%s: addr = %s not opened", __func__,
                        bd_addr->ToString().c_str());
@@ -1559,7 +1550,7 @@ static bt_status_t set_report(RawAddress* bd_addr,
     /* Build a SetReport data buffer */
     // TODO
     hex_bytes_filled = ascii_2_hex(report, len, hexbuf);
-    LOG_INFO("Hex bytes filled, hex value: %d", hex_bytes_filled);
+    LOG_INFO(LOG_TAG, "Hex bytes filled, hex value: %d", hex_bytes_filled);
     if (hex_bytes_filled) {
       BT_HDR* p_buf = create_pbuf(hex_bytes_filled, hexbuf);
       if (p_buf == NULL) {
@@ -1701,7 +1692,7 @@ static const bthh_interface_t bthhInterface = {
 bt_status_t btif_hh_execute_service(bool b_enable) {
   if (b_enable) {
     /* Enable and register with BTA-HH */
-    BTA_HhEnable(bte_hh_evt);
+    BTA_HhEnable(BTUI_HH_SECURITY, bte_hh_evt);
   } else {
     /* Disable HH */
     BTA_HhDisable();

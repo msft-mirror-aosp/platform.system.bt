@@ -16,7 +16,6 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
 #include "module.h"
 
@@ -41,9 +40,6 @@ class DiscoverabilityModule : public bluetooth::Module {
   void ListDependencies(ModuleList* list) override;
   void Start() override;
   void Stop() override;
-  std::string ToString() const override {
-    return std::string("DiscoverabilityModule");
-  }
 
  private:
   struct impl;

@@ -35,8 +35,7 @@ bt_status_t FakeSourceInit(
   return BT_STATUS_SUCCESS;
 }
 
-bt_status_t FakeSinkInit(btav_sink_callbacks_t* callbacks,
-                         int max_connected_audio_devices) {
+bt_status_t FakeSinkInit(btav_sink_callbacks_t* callbacks) {
   return BT_STATUS_SUCCESS;
 }
 

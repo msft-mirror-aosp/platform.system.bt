@@ -17,7 +17,6 @@
  ******************************************************************************/
 #pragma once
 
-#include <stdint.h>
 #include <array>
 
 namespace bluetooth {

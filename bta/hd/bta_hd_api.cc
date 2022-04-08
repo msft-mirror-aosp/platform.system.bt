@@ -23,16 +23,17 @@
  *
  ******************************************************************************/
 
-#define LOG_TAG "bluetooth"
+#include "bt_target.h"
 
-// BTA_HD_INCLUDED
-#include "bt_target.h"  // Must be first to define build configuration
 #if defined(BTA_HD_INCLUDED) && (BTA_HD_INCLUDED == TRUE)
 
-#include "bta/hd/bta_hd_int.h"
-#include "osi/include/allocator.h"
-#include "osi/include/compat.h"
-#include "osi/include/log.h"
+#include <log/log.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "bta_hd_api.h"
+#include "bta_hd_int.h"
 
 /*****************************************************************************
  *  Constants
@@ -79,7 +80,7 @@ void BTA_HdDisable(void) {
 
   bta_sys_deregister(BTA_ID_HD);
 
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
   p_buf->event = BTA_HD_API_DISABLE_EVT;
   bta_sys_sendmsg(p_buf);
 }
@@ -152,7 +153,7 @@ extern void BTA_HdRegisterApp(tBTA_HD_APP_INFO* p_app_info,
 extern void BTA_HdUnregisterApp(void) {
   APPL_TRACE_API("%s", __func__);
 
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
   p_buf->event = BTA_HD_API_UNREGISTER_APP_EVT;
 
   bta_sys_sendmsg(p_buf);
@@ -203,7 +204,7 @@ extern void BTA_HdSendReport(tBTA_HD_REPORT* p_report) {
 extern void BTA_HdVirtualCableUnplug(void) {
   APPL_TRACE_API("%s", __func__);
 
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
   p_buf->event = BTA_HD_API_VC_UNPLUG_EVT;
 
   bta_sys_sendmsg(p_buf);
@@ -242,7 +243,7 @@ extern void BTA_HdConnect(const RawAddress& addr) {
  ******************************************************************************/
 extern void BTA_HdDisconnect(void) {
   APPL_TRACE_API("%s", __func__);
-  BT_HDR_RIGID* p_buf = (BT_HDR_RIGID*)osi_malloc(sizeof(BT_HDR_RIGID));
+  BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
   p_buf->event = BTA_HD_API_DISCONNECT_EVT;
 
   bta_sys_sendmsg(p_buf);

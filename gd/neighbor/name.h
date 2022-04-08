@@ -33,13 +33,9 @@ using CancelRemoteNameCallback = common::OnceCallback<void(hci::ErrorCode status
 
 class NameModule : public bluetooth::Module {
  public:
-  void ReadRemoteNameRequest(
-      hci::Address address,
-      hci::PageScanRepetitionMode page_scan_repetition_mode,
-      uint16_t clock_offset,
-      hci::ClockOffsetValid clock_offset_valid,
-      ReadRemoteNameCallback on_read_name,
-      os::Handler* handler);
+  void ReadRemoteNameRequest(hci::Address address, hci::PageScanRepetitionMode page_scan_repetition_mode,
+                             uint16_t clock_offset, hci::ClockOffsetValid clock_offset_valid,
+                             ReadRemoteNameCallback on_read_name, os::Handler* handler);
   void CancelRemoteNameRequest(hci::Address address, CancelRemoteNameCallback on_cancel, os::Handler* handler);
 
   static const ModuleFactory Factory;
@@ -51,9 +47,6 @@ class NameModule : public bluetooth::Module {
   void ListDependencies(ModuleList* list) override;
   void Start() override;
   void Stop() override;
-  std::string ToString() const override {
-    return std::string("NameModule");
-  }
 
  private:
   struct impl;

@@ -27,8 +27,6 @@
 #include <base/strings/stringprintf.h>
 #include <gtest/gtest.h>
 
-#include "abstract_message_loop"
-#include "array_utils.h"
 #include "service/adapter.h"
 #include "service/hal/fake_bluetooth_gatt_interface.h"
 #include "service/hal/fake_bluetooth_interface.h"
@@ -84,7 +82,7 @@ class IPCLinuxTest : public ::testing::Test {
     const base::CommandLine::CharType* argv[] = {
         "program", ipc_socket_arg.c_str(),
     };
-    base::CommandLine::Init(ARRAY_SIZE(argv), argv);
+    base::CommandLine::Init(arraysize(argv), argv);
   }
 
   void ConnectToTestSocket() {
@@ -103,7 +101,7 @@ class IPCLinuxTest : public ::testing::Test {
 
  protected:
   base::AtExitManager exit_manager_;
-  DEFINE_TEST_TASK_ENV(message_loop_);
+  base::MessageLoop message_loop_;
   bluetooth::Settings settings_;
 
   std::unique_ptr<bluetooth::Adapter> adapter_;
@@ -121,7 +119,7 @@ class IPCLinuxTestDisabled : public IPCLinuxTest {
   void SetUpCommandLine() override {
     // Set up with no --ipc-socket-path
     const base::CommandLine::CharType* argv[] = {"program"};
-    base::CommandLine::Init(ARRAY_SIZE(argv), argv);
+    base::CommandLine::Init(arraysize(argv), argv);
   }
 
  private:
@@ -136,13 +134,13 @@ class TestDelegate : public ipc::IPCManager::Delegate,
   void OnIPCHandlerStarted(ipc::IPCManager::Type type) override {
     ASSERT_EQ(ipc::IPCManager::TYPE_LINUX, type);
     started_count_++;
-    btbase::AbstractTestMessageLoop::currentIO()->QuitWhenIdle();
+    base::MessageLoop::current()->QuitWhenIdle();
   }
 
   void OnIPCHandlerStopped(ipc::IPCManager::Type type) override {
     ASSERT_EQ(ipc::IPCManager::TYPE_LINUX, type);
     stopped_count_++;
-    btbase::AbstractTestMessageLoop::currentIO()->QuitWhenIdle();
+    base::MessageLoop::current()->QuitWhenIdle();
   }
 
   int started_count() const { return started_count_; }

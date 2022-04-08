@@ -26,7 +26,7 @@
 #ifndef BTA_OP_API_H
 #define BTA_OP_API_H
 
-#include <cstdint>
+#include "bta_api.h"
 
 /*****************************************************************************
  *  Constants and data types

@@ -55,13 +55,13 @@ template <typename T>
 class IteratorTest : public ::testing::Test {
  public:
   IteratorTest() = default;
-  ~IteratorTest() override = default;
+  ~IteratorTest() = default;
 
-  void SetUp() override {
+  void SetUp() {
     packet = std::shared_ptr<T>(new T({View(std::make_shared<const vector<uint8_t>>(count_all), 0, count_all.size())}));
   }
 
-  void TearDown() override {
+  void TearDown() {
     packet.reset();
   }
 
@@ -74,7 +74,7 @@ TYPED_TEST_CASE(IteratorTest, PacketViewTypes);
 class IteratorExtractTest : public ::testing::Test {
  public:
   IteratorExtractTest() = default;
-  ~IteratorExtractTest() override = default;
+  ~IteratorExtractTest() = default;
 };
 
 template <typename T>
@@ -90,7 +90,7 @@ TYPED_TEST_CASE(PacketViewTest, PacketViewTypes);
 class PacketViewMultiViewTest : public ::testing::Test {
  public:
   PacketViewMultiViewTest() = default;
-  ~PacketViewMultiViewTest() override = default;
+  ~PacketViewMultiViewTest() = default;
 
   const PacketView<true> single_view =
       PacketView<true>({View(std::make_shared<const vector<uint8_t>>(count_all), 0, count_all.size())});
@@ -104,7 +104,7 @@ class PacketViewMultiViewTest : public ::testing::Test {
 class PacketViewMultiViewAppendTest : public ::testing::Test {
  public:
   PacketViewMultiViewAppendTest() = default;
-  ~PacketViewMultiViewAppendTest() override = default;
+  ~PacketViewMultiViewAppendTest() = default;
 
   class AppendedPacketView : public PacketView<true> {
    public:
@@ -126,7 +126,7 @@ class PacketViewMultiViewAppendTest : public ::testing::Test {
 class ViewTest : public ::testing::Test {
  public:
   ViewTest() = default;
-  ~ViewTest() override = default;
+  ~ViewTest() = default;
 };
 
 TEST(IteratorExtractTest, extractLeTest) {
@@ -192,10 +192,8 @@ TYPED_TEST(IteratorTest, preIncrementTest) {
 TYPED_TEST(IteratorTest, postIncrementTest) {
   auto plus_plus = this->packet->begin();
   for (size_t i = 0; i < count_all.size(); i++) {
-    ASSERT_EQ(count_all[i], plus_plus.operator*())
-        << "Post-increment test: Dereferenced iterator does not equal expected "
-        << "at index " << i;
-    plus_plus.operator++();
+    ASSERT_EQ(count_all[i], *(plus_plus++)) << "Post-increment test: Dereferenced iterator does not equal expected "
+                                            << "at index " << i;
   }
 }
 
@@ -230,12 +228,10 @@ TYPED_TEST(IteratorTest, preDecrementTest) {
 
 TYPED_TEST(IteratorTest, postDecrementTest) {
   auto minus_minus = this->packet->end();
-  minus_minus.operator--();
+  minus_minus--;
   for (size_t i = count_all.size() - 1; i > 0; i--) {
-    ASSERT_EQ(count_all[i], minus_minus.operator*())
-        << "Post-decrement test: Dereferenced iterator does not equal expected "
-        << "at index " << i;
-    minus_minus.operator--();
+    ASSERT_EQ(count_all[i], *(minus_minus--)) << "Post-decrement test: Dereferenced iterator does not equal expected "
+                                              << "at index " << i;
   }
 }
 
@@ -312,16 +308,14 @@ TYPED_TEST(IteratorTest, numBytesRemainingTest) {
   size_t remaining = all.NumBytesRemaining();
   for (size_t n = remaining; n > 0; n--) {
     ASSERT_EQ(remaining, all.NumBytesRemaining());
-    all.operator++();
+    all++;
     remaining--;
   }
   ASSERT_EQ(static_cast<size_t>(0), all.NumBytesRemaining());
-  all.operator++();
-  ASSERT_DEATH(all.operator*(), "");
-  all.operator++();
+  ASSERT_DEATH(*(all++), "");
+  all++;
   ASSERT_EQ(static_cast<size_t>(0), all.NumBytesRemaining());
-  all.operator++();
-  ASSERT_DEATH(all.operator*(), "");
+  ASSERT_DEATH(*(all++), "");
 }
 
 TYPED_TEST(IteratorTest, subrangeTest) {
@@ -527,9 +521,7 @@ TEST_F(PacketViewMultiViewTest, dereferenceTestLittleEndian) {
   auto single_itr = single_view.begin();
   auto multi_itr = multi_view.begin();
   for (size_t i = 0; i < single_view.size(); i++) {
-    ASSERT_EQ(single_itr.operator*(), multi_itr.operator*());
-    single_itr.operator++();
-    multi_itr.operator++();
+    ASSERT_EQ(*(single_itr++), *(multi_itr++));
   }
   ASSERT_DEATH(*multi_itr, "");
 }
@@ -538,9 +530,7 @@ TEST_F(PacketViewMultiViewTest, dereferenceTestBigEndian) {
   auto single_itr = single_view.begin();
   auto multi_itr = multi_view.begin();
   for (size_t i = 0; i < single_view.size(); i++) {
-    ASSERT_EQ(single_itr.operator*(), multi_itr.operator*());
-    single_itr.operator++();
-    multi_itr.operator++();
+    ASSERT_EQ(*(single_itr++), *(multi_itr++));
   }
   ASSERT_DEATH(*multi_itr, "");
 }
@@ -560,9 +550,7 @@ TEST_F(PacketViewMultiViewAppendTest, dereferenceTestLittleEndianAppend) {
   auto single_itr = single_view.begin();
   auto multi_itr = multi_view.begin();
   for (size_t i = 0; i < single_view.size(); i++) {
-    ASSERT_EQ(single_itr.operator*(), multi_itr.operator*());
-    single_itr.operator++();
-    multi_itr.operator++();
+    ASSERT_EQ(*(single_itr++), *(multi_itr++));
   }
   ASSERT_DEATH(*multi_itr, "");
 }
@@ -571,9 +559,7 @@ TEST_F(PacketViewMultiViewAppendTest, dereferenceTestBigEndianAppend) {
   auto single_itr = single_view.begin();
   auto multi_itr = multi_view.begin();
   for (size_t i = 0; i < single_view.size(); i++) {
-    ASSERT_EQ(single_itr.operator*(), multi_itr.operator*());
-    single_itr.operator++();
-    multi_itr.operator++();
+    ASSERT_EQ(*(single_itr++), *(multi_itr++));
   }
   ASSERT_DEATH(*multi_itr, "");
 }

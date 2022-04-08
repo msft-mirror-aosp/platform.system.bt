@@ -22,7 +22,6 @@
 #include <base/logging.h>
 #include <base/observer_list.h>
 
-#include "abstract_observer_list.h"
 #include "service/logging_helpers.h"
 
 #include "btcore/include/hal_util.h"
@@ -53,7 +52,7 @@ shared_mutex_impl g_instance_lock;
 
 // Helper for obtaining the observer list. This is forward declared here and
 // defined below since it depends on BluetoothInterfaceImpl.
-btbase::AbstractObserverList<BluetoothInterface::Observer>* GetObservers();
+base::ObserverList<BluetoothInterface::Observer>* GetObservers();
 
 #define FOR_EACH_BLUETOOTH_OBSERVER(func)  \
   for (auto& observer : *GetObservers()) { \
@@ -147,17 +146,16 @@ void BondStateChangedCallback(bt_status_t status, RawAddress* remote_bd_addr,
 }
 
 void AclStateChangedCallback(bt_status_t status, RawAddress* remote_bd_addr,
-                             bt_acl_state_t state, bt_hci_error_code_t hci_reason) {
+                             bt_acl_state_t state) {
   shared_lock<shared_mutex_impl> lock(g_instance_lock);
   VERIFY_INTERFACE_OR_RETURN();
   CHECK(remote_bd_addr);
   VLOG(1) << "Remote device ACL state changed - status: "
           << BtStatusText(status)
           << " - BD_ADDR: " << BtAddrString(remote_bd_addr) << " - state: "
-          << ((state == BT_ACL_STATE_CONNECTED) ? "CONNECTED" : "DISCONNECTED")
-          << " - HCI_REASON: " << std::to_string(hci_reason);
+          << ((state == BT_ACL_STATE_CONNECTED) ? "CONNECTED" : "DISCONNECTED");
   FOR_EACH_BLUETOOTH_OBSERVER(
-      AclStateChangedCallback(status, *remote_bd_addr, state, hci_reason));
+      AclStateChangedCallback(status, *remote_bd_addr, state));
 }
 
 void ThreadEventCallback(bt_cb_thread_evt evt) {
@@ -193,23 +191,6 @@ int ReleaseWakeLockCallout(const char* /* lock_name */) {
   return BT_STATUS_SUCCESS;
 }
 
-void LinkQualityReportCallback(uint64_t timestamp, int report_id, int rssi,
-    int snr, int retransmission_count, int packets_not_receive_count,
-    int negative_acknowledgement_count) {
-  shared_lock<shared_mutex_impl> lock(g_instance_lock);
-  VERIFY_INTERFACE_OR_RETURN();
-  LOG(WARNING) << __func__ << " - timestamp: " << timestamp
-               << " - report_id: " << report_id << " - rssi: " << rssi
-               << " - snr: " << snr
-               << " - retransmission_count: " << retransmission_count
-               << " - packets_not_receive_count: " << packets_not_receive_count
-               << " - negative_acknowledgement_count: "
-               << negative_acknowledgement_count;
-  FOR_EACH_BLUETOOTH_OBSERVER(LinkQualityReportCallback(
-      timestamp, report_id, rssi, snr, retransmission_count,
-      packets_not_receive_count, negative_acknowledgement_count));
-}
-
 // The HAL Bluetooth DM callbacks.
 bt_callbacks_t bt_callbacks = {
     sizeof(bt_callbacks_t),
@@ -225,9 +206,7 @@ bt_callbacks_t bt_callbacks = {
     ThreadEventCallback,
     nullptr, /* dut_mode_recv_cb */
     nullptr, /* le_test_mode_cb */
-    nullptr, /* energy_info_cb */
-    LinkQualityReportCallback,
-    nullptr /* generate_local_oob_data_cb */
+    nullptr  /* energy_info_cb */
 };
 
 bt_os_callouts_t bt_os_callouts = {sizeof(bt_os_callouts_t),
@@ -275,7 +254,7 @@ class BluetoothInterfaceImpl : public BluetoothInterface {
 
     // Initialize the Bluetooth interface. Set up the adapter (Bluetooth DM) API
     // callbacks.
-    status = hal_iface_->init(&bt_callbacks, false, false, 0, nullptr, false);
+    status = hal_iface_->init(&bt_callbacks, false, false, 0, false);
     if (status != BT_STATUS_SUCCESS) {
       LOG(ERROR) << "Failed to initialize Bluetooth stack";
       return false;
@@ -290,14 +269,14 @@ class BluetoothInterfaceImpl : public BluetoothInterface {
     return true;
   }
 
-  btbase::AbstractObserverList<Observer>* observers() { return &observers_; }
+  base::ObserverList<Observer>* observers() { return &observers_; }
 
  private:
   // List of observers that are interested in notifications from us. We're not
   // using a base::ObserverListThreadSafe, which it posts observer events
   // automatically on the origin threads, as we want to avoid that overhead and
   // simply forward the events to the upper layer.
-  btbase::AbstractObserverList<Observer> observers_;
+  base::ObserverList<Observer> observers_;
 
   // The HAL handle obtained from the shared library. We hold a weak reference
   // to this since the actual data resides in the shared Bluetooth library.
@@ -310,7 +289,7 @@ namespace {
 
 // Helper for obtaining the observer list from the global instance. This
 // function is NOT thread safe.
-btbase::AbstractObserverList<BluetoothInterface::Observer>* GetObservers() {
+base::ObserverList<BluetoothInterface::Observer>* GetObservers() {
   CHECK(g_bluetooth_interface);
   return static_cast<BluetoothInterfaceImpl*>(g_bluetooth_interface)
       ->observers();
@@ -366,15 +345,7 @@ void BluetoothInterface::Observer::BondStateChangedCallback(
 
 void BluetoothInterface::Observer::AclStateChangedCallback(
     bt_status_t /* status */, const RawAddress& /* remote_bdaddr */,
-    bt_acl_state_t /* state */, bt_hci_error_code_t /* hci_reason */) {
-  // Do nothing.
-}
-
-void BluetoothInterface::Observer::LinkQualityReportCallback(
-    uint64_t /* timestamp */, int /* report_id */, int /* rssi */,
-    int /* snr */, int /* retransmission_count */,
-    int /* packets_not_receive_count */,
-    int /* negative_acknowledgement_count */) {
+    bt_acl_state_t /* state */) {
   // Do nothing.
 }
 

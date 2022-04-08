@@ -24,15 +24,13 @@
 #ifndef BTA_GATTS_INT_H
 #define BTA_GATTS_INT_H
 
-#include <cstdint>
+#include "bt_target.h"
+#include "bta_gatt_api.h"
+#include "bta_sys.h"
+#include "gatt_api.h"
 
-#include "bt_target.h"  // Must be first to define build configuration
-
-#include "bta/include/bta_gatt_api.h"
-#include "bta/sys/bta_sys.h"
-#include "stack/include/bt_types.h"
-#include "stack/include/btm_ble_api_types.h"
-#include "stack/include/gatt_api.h"
+#include <base/strings/stringprintf.h>
+#include "bt_common.h"
 
 /*****************************************************************************
  *  Constants and data types
@@ -61,28 +59,27 @@ typedef uint16_t tBTA_GATTS_INT_EVT;
 
 /* internal strucutre for GATTC register API  */
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   bluetooth::Uuid app_uuid;
   tBTA_GATTS_CBACK* p_cback;
-  bool eatt_support;
 } tBTA_GATTS_API_REG;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   tGATT_IF server_if;
 } tBTA_GATTS_INT_START_IF;
 
 typedef tBTA_GATTS_INT_START_IF tBTA_GATTS_API_DEREG;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   tGATT_IF server_if;
   btgatt_db_element_t* service;
   uint16_t count;
 } tBTA_GATTS_API_ADD_SERVICE;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   uint16_t attr_id;
   uint16_t len;
   bool need_confirm;
@@ -90,30 +87,30 @@ typedef struct {
 } tBTA_GATTS_API_INDICATION;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   uint32_t trans_id;
   tGATT_STATUS status;
   tGATTS_RSP* p_rsp;
 } tBTA_GATTS_API_RSP;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
-  tBT_TRANSPORT transport;
+  BT_HDR hdr;
+  tGATT_TRANSPORT transport;
 } tBTA_GATTS_API_START;
 
 typedef struct {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   RawAddress remote_bda;
   tGATT_IF server_if;
   bool is_direct;
-  tBT_TRANSPORT transport;
+  tGATT_TRANSPORT transport;
 
 } tBTA_GATTS_API_OPEN;
 
 typedef tBTA_GATTS_API_OPEN tBTA_GATTS_API_CANCEL_OPEN;
 
 typedef union {
-  BT_HDR_RIGID hdr;
+  BT_HDR hdr;
   tBTA_GATTS_API_REG api_reg;
   tBTA_GATTS_API_DEREG api_dereg;
   tBTA_GATTS_API_ADD_SERVICE api_add_service;
@@ -159,7 +156,7 @@ extern tBTA_GATTS_CB bta_gatts_cb;
 /*****************************************************************************
  *  Function prototypes
  ****************************************************************************/
-extern bool bta_gatts_hdl_event(BT_HDR_RIGID* p_msg);
+extern bool bta_gatts_hdl_event(BT_HDR* p_msg);
 
 extern void bta_gatts_api_disable(tBTA_GATTS_CB* p_cb);
 extern void bta_gatts_api_enable(tBTA_GATTS_CB* p_cb, tBTA_GATTS_DATA* p_data);

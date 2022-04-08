@@ -29,14 +29,12 @@
  * interfaces may be made here
  */
 
+#include "gd/shim/only_include_this_file_into_legacy_stack___ever.h"
 #include "osi/include/future.h"
 
 namespace bluetooth {
 namespace os {
 class Handler;
-}
-namespace activity_attribution {
-class ActivityAttribution;
 }
 namespace neighbor {
 class ConnectabilityModule;
@@ -48,30 +46,20 @@ class PageModule;
 namespace hci {
 class Controller;
 class HciLayer;
-class AclManager;
 class LeAdvertisingManager;
 class LeScanningManager;
-class VendorSpecificEventManager;
 }
-
-namespace l2cap {
-namespace classic {
-class L2capClassicModule;
-}  // namespace classic
-namespace le {
-class L2capLeModule;
-}  // namespace le
-}  // namespace l2cap
 
 namespace security {
 class SecurityModule;
 }
 namespace storage {
-class StorageModule;
+class LegacyModule;
 }
 
 namespace shim {
-class Dumpsys;
+future_t* StartGabeldorscheStack();
+future_t* StopGabeldorscheStack();
 
 /* This returns a handler that might be used in shim to receive callbacks from
  * within the stack. */
@@ -83,16 +71,12 @@ neighbor::ConnectabilityModule* GetConnectability();
 Dumpsys* GetDumpsys();
 neighbor::InquiryModule* GetInquiry();
 hci::HciLayer* GetHciLayer();
-l2cap::classic::L2capClassicModule* GetL2capClassicModule();
-l2cap::le::L2capLeModule* GetL2capLeModule();
+L2cap* GetL2cap();
 neighbor::NameModule* GetName();
 neighbor::PageModule* GetPage();
 hci::LeScanningManager* GetScanning();
 bluetooth::security::SecurityModule* GetSecurityModule();
-storage::StorageModule* GetStorage();
-hci::AclManager* GetAclManager();
-hci::VendorSpecificEventManager* GetVendorSpecificEventManager();
-activity_attribution::ActivityAttribution* GetActivityAttribution();
+storage::LegacyModule* GetStorage();
 
 }  // namespace shim
 }  // namespace bluetooth
