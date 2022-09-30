@@ -720,7 +720,6 @@ void bta_hh_ctrl_dat_act(tBTA_HH_DEV_CB* p_cb, tBTA_HH_DATA* p_data) {
   BT_HDR* pdata = p_data->hid_cback.p_data;
   uint8_t* data = (uint8_t*)(pdata + 1) + pdata->offset;
   tBTA_HH_HSDATA hs_data;
-  bool do_free = true;
 
 #if (BTA_HH_DEBUG == TRUE)
   APPL_TRACE_DEBUG("Ctrl DATA received w4: event[%s]",
@@ -743,7 +742,6 @@ void bta_hh_ctrl_dat_act(tBTA_HH_DEV_CB* p_cb, tBTA_HH_DATA* p_data) {
       hs_data.rsp_data.p_rpt_data = pdata;
       bta_hh_co_get_rpt_rsp(hs_data.handle, hs_data.status, pdata->data,
                             pdata->len);
-      do_free = false;
       break;
     case BTA_HH_GET_PROTO_EVT:
       /* match up BTE/BTA report/boot mode def*/
@@ -779,9 +777,7 @@ void bta_hh_ctrl_dat_act(tBTA_HH_DEV_CB* p_cb, tBTA_HH_DATA* p_data) {
   (*bta_hh_cb.p_cback)(p_cb->w4_evt, (tBTA_HH*)&hs_data);
 
   p_cb->w4_evt = 0;
-  if (do_free) {
-    osi_free_and_reset((void**)&pdata);
-  }
+  osi_free_and_reset((void**)&pdata);
 }
 
 /*******************************************************************************
