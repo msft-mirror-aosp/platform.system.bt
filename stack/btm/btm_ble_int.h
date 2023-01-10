@@ -103,7 +103,8 @@ extern bool btm_ble_get_enc_key_type(const RawAddress& bd_addr,
                                      uint8_t* p_key_types);
 
 extern void btm_ble_test_command_complete(uint8_t* p);
-extern void btm_ble_rand_enc_complete(uint8_t* p, uint16_t op_code,
+extern void btm_ble_rand_enc_complete(uint8_t* p, uint16_t evt_len,
+                                      uint16_t op_code,
                                       tBTM_RAND_ENC_CB* p_enc_cplt_cback);
 
 extern void btm_sec_save_le_key(const RawAddress& bd_addr,
