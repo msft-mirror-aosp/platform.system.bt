@@ -93,7 +93,7 @@ extern uint8_t btm_handle_to_acl_index(uint16_t hci_handle);
 extern void btm_read_link_policy_complete(uint8_t* p);
 
 extern void btm_read_rssi_timeout(void* data);
-extern void btm_read_rssi_complete(uint8_t* p);
+extern void btm_read_rssi_complete(uint8_t* p, uint16_t evt_len);
 
 extern void btm_read_failed_contact_counter_timeout(void* data);
 extern void btm_read_failed_contact_counter_complete(uint8_t* p);
