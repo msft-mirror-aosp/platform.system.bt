@@ -276,7 +276,7 @@ extern tL2CAP_LE_RESULT_CODE btm_ble_start_sec_check(
 extern tINQ_DB_ENT* btm_inq_db_new(const RawAddress& p_bda);
 
 extern void btm_rem_oob_req(uint8_t* p);
-extern void btm_read_local_oob_complete(uint8_t* p);
+extern void btm_read_local_oob_complete(uint8_t* p, uint16_t evt_len);
 
 extern void btm_acl_resubmit_page(void);
 extern void btm_acl_reset_paging(void);
