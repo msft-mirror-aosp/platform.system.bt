@@ -71,6 +71,8 @@ DeviceProperties::DeviceProperties(const std::string& file_name)
   // TODO: Implement a better mapping.
   for (int i = 35; i < 64; i++) supported_commands_.push_back(0x00);
 
+  supported_commands_[18] &= ~(1 << 2);
+
   le_supported_features_ = 0x1f;
   le_supported_states_ = 0x3ffffffffff;
   le_vendor_cap_ = {};
