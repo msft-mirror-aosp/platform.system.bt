@@ -93,7 +93,7 @@ extern uint8_t btm_handle_to_acl_index(uint16_t hci_handle);
 extern void btm_read_link_policy_complete(uint8_t* p);
 
 extern void btm_read_rssi_timeout(void* data);
-extern void btm_read_rssi_complete(uint8_t* p);
+extern void btm_read_rssi_complete(uint8_t* p, uint16_t evt_len);
 
 extern void btm_read_failed_contact_counter_timeout(void* data);
 extern void btm_read_failed_contact_counter_complete(uint8_t* p);
@@ -102,7 +102,7 @@ extern void btm_read_automatic_flush_timeout_timeout(void* data);
 extern void btm_read_automatic_flush_timeout_complete(uint8_t* p);
 
 extern void btm_read_tx_power_timeout(void* data);
-extern void btm_read_tx_power_complete(uint8_t* p, bool is_ble);
+extern void btm_read_tx_power_complete(uint8_t* p, uint16_t evt_len, bool is_ble);
 
 extern void btm_read_link_quality_timeout(void* data);
 extern void btm_read_link_quality_complete(uint8_t* p);
@@ -191,7 +191,7 @@ extern void btm_vsc_complete(uint8_t* p, uint16_t cc_opcode, uint16_t evt_len,
                              tBTM_VSC_CMPL_CB* p_vsc_cplt_cback);
 extern void btm_inq_db_reset(void);
 extern void btm_vendor_specific_evt(uint8_t* p, uint8_t evt_len);
-extern void btm_delete_stored_link_key_complete(uint8_t* p);
+extern void btm_delete_stored_link_key_complete(uint8_t* p, uint16_t evt_len);
 extern void btm_report_device_status(tBTM_DEV_STATUS status);
 extern tBTM_STATUS BTM_BT_Quality_Report_VSE_Register(
     bool is_register, tBTM_BT_QUALITY_REPORT_RECEIVER* p_bqr_report_receiver);
@@ -276,7 +276,7 @@ extern tL2CAP_LE_RESULT_CODE btm_ble_start_sec_check(
 extern tINQ_DB_ENT* btm_inq_db_new(const RawAddress& p_bda);
 
 extern void btm_rem_oob_req(uint8_t* p);
-extern void btm_read_local_oob_complete(uint8_t* p);
+extern void btm_read_local_oob_complete(uint8_t* p, uint16_t evt_len);
 
 extern void btm_acl_resubmit_page(void);
 extern void btm_acl_reset_paging(void);

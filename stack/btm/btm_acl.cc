@@ -2161,7 +2161,7 @@ void btm_read_tx_power_timeout(UNUSED_ATTR void* data) {
  * Returns          void
  *
  ******************************************************************************/
-void btm_read_tx_power_complete(uint8_t* p, bool is_ble) {
+void btm_read_tx_power_complete(uint8_t* p, uint16_t evt_len, bool is_ble) {
   tBTM_CMPL_CB* p_cb = btm_cb.devcb.p_tx_power_cmpl_cb;
   tBTM_TX_POWER_RESULT result;
   tACL_CONN* p_acl_cb = &btm_cb.acl_db[0];
@@ -2172,6 +2172,10 @@ void btm_read_tx_power_complete(uint8_t* p, bool is_ble) {
 
   /* If there was a registered callback, call it */
   if (p_cb) {
+    if (evt_len < 1) {
+      goto err_out;
+    }
+
     STREAM_TO_UINT8(result.hci_status, p);
 
     if (result.hci_status == HCI_SUCCESS) {
@@ -2179,6 +2183,11 @@ void btm_read_tx_power_complete(uint8_t* p, bool is_ble) {
 
       if (!is_ble) {
         uint16_t handle;
+
+	if (evt_len < 4) {
+	  goto err_out;
+	}
+
         STREAM_TO_UINT16(handle, p);
         STREAM_TO_UINT8(result.tx_power, p);
 
@@ -2190,6 +2199,10 @@ void btm_read_tx_power_complete(uint8_t* p, bool is_ble) {
           }
         }
       } else {
+	if (evt_len < 2) {
+	  goto err_out;
+	}
+
         STREAM_TO_UINT8(result.tx_power, p);
         result.rem_bda = btm_cb.devcb.read_tx_pwr_addr;
       }
@@ -2201,6 +2214,11 @@ void btm_read_tx_power_complete(uint8_t* p, bool is_ble) {
 
     (*p_cb)(&result);
   }
+
+  return;
+
+ err_out:
+  BTM_TRACE_ERROR("%s: malformatted event packet, too short", __func__);
 }
 
 /*******************************************************************************
@@ -2230,7 +2248,7 @@ void btm_read_rssi_timeout(UNUSED_ATTR void* data) {
  * Returns          void
  *
  ******************************************************************************/
-void btm_read_rssi_complete(uint8_t* p) {
+void btm_read_rssi_complete(uint8_t* p, uint16_t evt_len) {
   tBTM_CMPL_CB* p_cb = btm_cb.devcb.p_rssi_cmpl_cb;
   tBTM_RSSI_RESULT result;
   tACL_CONN* p_acl_cb = &btm_cb.acl_db[0];
@@ -2241,11 +2259,18 @@ void btm_read_rssi_complete(uint8_t* p) {
 
   /* If there was a registered callback, call it */
   if (p_cb) {
+    if (evt_len < 1) {
+      goto err_out;
+    }
     STREAM_TO_UINT8(result.hci_status, p);
 
     if (result.hci_status == HCI_SUCCESS) {
       uint16_t handle;
       result.status = BTM_SUCCESS;
+
+      if (evt_len < 4) {
+        goto err_out;
+      }
 
       STREAM_TO_UINT16(handle, p);
 
@@ -2266,6 +2291,11 @@ void btm_read_rssi_complete(uint8_t* p) {
 
     (*p_cb)(&result);
   }
+
+  return;
+
+err_out:
+  BTM_TRACE_ERROR("%s: malformatted event packet, too short", __func__);
 }
 
 /*******************************************************************************
