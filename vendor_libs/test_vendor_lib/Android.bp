@@ -168,8 +168,8 @@ cc_binary_host {
         "libgflags",
     ],
     sanitize: {
-        address: true,
-        all_undefined: true,
+        address: false,
+        all_undefined: false,
     },
     target: {
         // TODO(b/181290178) remove it when sanitize option is supported by linux_bionic as well
